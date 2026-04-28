@@ -1,6 +1,7 @@
 {
   "name": "ncc1701",
   "private": true,
+  "packageManager": "npm@10.2.4",
   "description": "Polyglot Monorepo",
   "scripts": {
     "build": "turbo build",
