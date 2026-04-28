@@ -1,0 +1,16 @@
+{
+  "name": "ncc1701",
+  "private": true,
+  "description": "Polyglot Monorepo",
+  "scripts": {
+    "build": "turbo build",
+    "dev": "turbo dev",
+    "lint": "turbo lint",
+    "format": "prettier --write \"**/*.{js,ts,json,md,yaml,yml}\""
+  },
+  "devDependencies": {
+    "turbo": "latest",
+    "prettier": "latest"
+  },
+  "packageManager": "pnpm@9.0.0"
+}
