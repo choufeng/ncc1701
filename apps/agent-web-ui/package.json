@@ -5,13 +5,15 @@
     "dev": "vite"
   },
   "dependencies": {
+    "@pi-mono/web-ui": "workspace:*",
     "react": "latest",
     "react-dom": "latest",
-    "@pi-mono/web-ui": "workspace:*"
+    "react-resizable-panels": "^4.10.0"
   },
   "devDependencies": {
-    "vite": "latest",
     "@types/react": "latest",
-    "@types/react-dom": "latest"
+    "@types/react-dom": "latest",
+    "typescript": "^6.0.3",
+    "vite": "latest"
   }
 }
