@@ -1,73 +1,55 @@
-# Design Spec: High-Performance AI Agent with ElysiaJS & pi-mono
+# Design Spec v2: Generative AI Agent Workstation (ElysiaJS & pi-mono)
 
 **Date:** 2026-04-28
-**Status:** Draft
-**Topic:** Integration of ElysiaJS (Backend) and pi-mono (Agent Logic & Web UI) within the `ncc1701` Monorepo.
+**Status:** Finalized
+**Topic:** Evolution of the AI Agent UI into a Generative Workstation with Resizable Layouts and Artifact Registry.
 
-## 1. Executive Summary
+## 1. Vision
 
-This document outlines the architecture for a high-performance AI Agent system designed to handle long-running tasks. The system leverages **ElysiaJS** for a high-throughput, type-safe backend infrastructure on Bun, and **pi-mono** for core agentic reasoning and a professional, minimalist Web UI.
+Transform the AI Agent from a chat interface into a **Generative Workstation**. The UI acts as a dynamic container that adapts its layout and tools based on the Agent's real-time output, providing a seamless "Human-in-the-loop" experience.
 
-## 2. Architecture Overview
+## 2. Updated Architecture
 
-The system follows a decoupled Client-Server model optimized for real-time state synchronization via WebSockets.
+### 2.1 The Artifact Protocol (Shared)
 
-### 2.1 Component Breakdown
+A specialized communication layer over WebSockets to manage complex UI state.
 
-- **Backend (apps/agent-backend):**
-  - **Framework:** ElysiaJS (Bun runtime).
-  - **Core Engine:** `@pi-mono/core` for LLM orchestration.
-  - **Communication:** WebSockets for real-time streaming of thoughts and tool execution logs.
-  - **Security:** Tool-call approval gate (Human-in-the-loop).
-- **Frontend (apps/agent-web-ui):**
-  - **Framework:** React + Vite.
-  - **UI Library:** `@pi-mono/web-ui` for task timelines and agent message streams.
-  - **Visual Style:** Ultra-minimalist, monospace/pixel-art aesthetic.
-- **Shared (packages/api-schema):**
-  - **Type Safety:** Shared TypeScript types for WebSocket messages via Elysia's `Eden`.
+- **Message Types:**
+  - `MOUNT_ARTIFACT`: Instructs the UI to open a new resource.
+  - `PATCH_ARTIFACT`: Updates data within an existing resource.
+  - `DYNAMIC_ACTION`: Updates the available buttons in the bottom action bar.
 
-## 3. Core Workflows
+### 2.2 The Intelligent Registry (Frontend)
 
-### 3.1 Long-Running Task Processing
+A component mapping system in `apps/agent-web-ui`:
 
-1. User sends a prompt via Web UI.
-2. Backend instantiates a `pi-mono` Agent.
-3. Agent breaks down the task into a `TaskTimeline`.
-4. As the Agent works, it pushes updates through WebSocket:
-   - `THOUGHT`: Current reasoning.
-   - `TOOL_CALL`: Requesting system access (e.g., shell command).
-   - `STDOUT`: Real-time output from running processes.
-5. User provides approval for sensitive operations.
+- **Registry:** Maps `componentId` (e.g., `CHART_V1`) to pre-defined React components.
+- **Extensibility:** Pre-configured to support `type: "sandbox"` for future Live-code (Sandpack/iframe) rendering.
 
-### 3.2 Tool Execution Environment
+### 2.3 The Elastic Stage (Layout)
 
-The Agent is granted "hands" via a custom Toolbox:
+A three-pane resizable layout:
 
-- **FileSystem:** Read/Write access to the project root.
-- **Shell:** Ability to execute `Bun.spawn` for tests, builds, and git operations.
-- **Context:** Access to Monorepo structure for cross-package refactoring.
+- **Pane 1 (Left):** Execution Pipeline (Task tracking).
+- **Pane 2 (Center):** Conversation & Input (Decision making).
+- **Pane 3 (Right):** Artifact Canvas (Generative UI & Resource presentation).
+- **Interaction:** Dual drag-to-resize handles between all panes.
 
-## 4. Implementation Details
+## 3. Generative UI Logic
 
-### 4.1 Directory Structure
+- **Adaptive UI:** The Agent decides which component is best suited for the data (e.g., choosing a `Markdown` component for docs vs. a `BarChart` for benchmarks).
+- **Contextual Actions:** The bottom bar is no longer static. If an artifact is a `GitDiff`, the AI populates the bar with "Approve", "Regenerate", or "Discard".
 
-```text
-ncc1701/
-├── apps/
-│   ├── agent-backend/    # Elysia + pi-mono/core
-│   └── agent-web-ui/     # React + pi-mono/web-ui
-└── packages/
-    └── api-schema/       # Shared TS types
-```
+## 4. Implementation Roadmap (Extended)
 
-### 4.2 Key Technologies
+- **Task 1-3:** Core Backend/Frontend/Monorepo setup (as previously planned).
+- **Task 4 (New):** Implementation of the **Artifact Registry** and **Resizable Layout Logic**.
+- **Task 5 (New):** Integration of the **Dynamic Action Bar**.
 
-- **Runtime:** Bun (for maximum performance and native `spawn`/`file` APIs).
-- **Web Framework:** ElysiaJS (Fastest Bun framework with End-to-End types).
-- **Agent Toolkit:** pi-mono (Specialized in coding agents and minimalist UI).
+## 5. Visual Identity
 
-## 5. Success Criteria
+Maintains the `pi-mono` minimalist aesthetic:
 
-- Agent can successfully execute a 2+ minute task (e.g., code refactor + test run) without connection drops.
-- UI provides real-time feedback for every step of the agent's process.
-- Zero-runtime type errors between Frontend and Backend.
+- **Colors:** Deep Black (#000), Zinc Grey, High-contrast Green (#4ade80) for status.
+- **Typography:** Monospace throughout.
+- **Animations:** Subtle "Pulse" for thinking, "Slide-up" for new artifacts.
