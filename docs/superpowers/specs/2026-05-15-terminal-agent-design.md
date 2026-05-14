@@ -23,13 +23,13 @@ src/
 ├── types.ts              # 全局 ADT 定义（Result、消息、错误、工具）
 ├── result.ts             # Result<T, E> 类型 + map/flatMap/match
 ├── errors.ts             # 错误类型层次
-├── pipeline.ts           # 纯函数管道：输入 → 构建 messages → 调度
+├── pipeline.ts           # 纯函数：appendMarkdown（Markdown 内容构建）
 ├── tools/
-│   ├── index.ts          # 纯函数：工具 schema 定义 + 调度映射表
-│   ├── file-read.ts      # 纯函数：参数验证 + schema
-│   ├── file-write.ts     # 纯函数：参数验证 + schema
-│   ├── shell.ts          # 纯函数：参数验证 + schema
-│   └── tavily.ts         # 纯函数：参数验证 + schema
+│   ├── index.ts          # 工厂：组装 4 个 AgentTool
+│   ├── file-read.ts      # file-read AgentTool
+│   ├── file-write.ts     # file-write AgentTool
+│   ├── shell.ts          # shell AgentTool
+│   └── tavily.ts         # tavily-search AgentTool
 ├── io/
 │   ├── file-io.ts        # 副作用：文件读写实现
 │   ├── shell-io.ts       # 副作用：Shell 执行
@@ -39,7 +39,7 @@ src/
 └── ui.ts                 # 副作用：OpenTUI 布局 + 事件绑定
 __tests__/
 ├── config.test.ts        # 配置解析纯函数测试
-├── pipeline.test.ts      # 管道纯函数测试
+├── pipeline.test.ts      # appendMarkdown 纯函数测试
 ├── tools/                # 工具参数验证测试
 ├── conversation.test.ts  # 持久化集成测试（临时目录）
 └── io/                   # IO 层 mock 测试
@@ -187,55 +187,33 @@ interface ConversationIO {
 }
 ```
 
-## 纯函数管道 (pipeline.ts)
+## Markdown 格式化 (pipeline.ts)
+
+消息管理和工具调度由 pi-agent-core Agent 内置处理。pipeline 仅负责 Markdown 格式化。
 
 ```typescript
-// 所有步骤为纯函数，无外部依赖
+// 纯函数，无外部依赖
 
-// 1. 验证工具调用参数
-function validateToolCall(call: ToolCall): Result<ValidatedToolCall, AppError>
-
-// 2. 构建消息上下文（历史 + 新输入）
-function buildMessages(history: readonly ChatMessage[], input: string): readonly ChatMessage[]
-
-// 3. 工具结果格式化
-function formatToolResult<T>(result: Result<T, AppError>): string
-
-// 4. Markdown 内容构建（追加到已有内容）
+// Markdown 内容构建（追加到已有内容）
 function appendMarkdown(content: string, role: string, text: string): string
-
-// 5. 路径安全校验（纯函数，不碰文件系统）
-function isPathSafe(requested: string, rootDir: string): boolean
-
-// 管道组合
-const handleToolCall = (call: ToolCall) =>
-  pipe(
-    validateToolCall(call),
-    flatMap(dispatchToIO),  // dispatchToIO 在 io/ 层实现
-    map(formatToolResult)
-  )
 ```
 
 ## 数据流
 
 ```
 用户输入 (Enter)
-  → buildMessages(history, input)           // 纯函数
-  → Agent.run(messages)                     // pi-agent-core
+  → agent.prompt(text)                     // pi-agent-core 管理
   → LLM 流式输出 → MarkdownRenderable       // streaming: true
-  → 工具调用?
-      → validateToolCall(call)              // 纯函数
-      → io 层执行                           // 副作用
-      → formatToolResult(result)            // 纯函数
-      → 回传 LLM → 继续生成
-  → 完成
-      → appendMessage(session, msg)         // io 层
+  → 工具调用 → Agent 内置调度 → io 层执行   // Agent 框架处理
+  → agent.subscribe 事件 → ui.appendMarkdown (pipeline.appendMarkdown)
+  → 完成 → conversationIO.appendMessage     // io 层持久化
 ```
 
 **纯函数 vs 副作用边界**：
-- `pipeline.ts` + `tools/*.ts` + `types.ts` + `result.ts` + `errors.ts` = **纯函数域**，零外部依赖
+- `pipeline.ts` + `types.ts` + `result.ts` + `errors.ts` = **纯函数域**，零外部依赖
 - `io/*.ts` + `ui.ts` = **副作用边界层**，通过接口注入
-- `index.ts` = **组装层**，将纯函数管道与 io 实现连接
+- `tools/*.ts` = **Agent 集成层**，实现 pi-agent-core AgentTool 接口
+- `index.ts` = **组装层**，将 IO 实现与 Agent + UI 连接
 
 ## TUI 布局
 
@@ -257,8 +235,10 @@ renderer.root (flexDirection: column)
 纯函数，从 `Record<string, string | undefined>`（即 env）解析为 `Result<AgentConfig, ConfigError>`。
 
 ```typescript
-function parseConfig(env: Record<string, string | undefined>): Result<AgentConfig, ConfigError>
+function parseConfig(env: Record<string, string | undefined>, cwd?: string): Result<AgentConfig, ConfigError>
 ```
+
+`cwd` 参数由调用方显式传入（默认 `process.cwd()`），保持纯函数引用透明性。
 
 环境变量：
 ```
@@ -273,8 +253,8 @@ NCC_ROOT_DIR=.    // 默认当前目录
 
 每个工具文件导出：
 1. **TypeBox schema**（pi-ai 兼容）
-2. **纯函数验证器**（参数校验，如路径安全检查）
-3. **IO 接口调用**（通过注入的 io 实例执行）
+2. **工厂函数**（接收 IO 接口，返回 AgentTool 实例）
+3. **execute 方法**（调用 IO 接口，throw 错误）
 
 | 工具 | 参数 | IO 方法 | 安全限制 |
 |------|------|---------|----------|
@@ -319,7 +299,7 @@ const agent = createAgent({ model, tools, systemPrompt, io: { fileIO, shellIO, t
 |------|----------|
 | `result.test.ts` | map/flatMap/mapError/match 所有分支 |
 | `config.test.ts` | 各种 env 组合 → Result 正确性 |
-| `pipeline.test.ts` | validateToolCall、buildMessages、formatToolResult、isPathSafe |
+| `pipeline.test.ts` | appendMarkdown 各角色输出格式 |
 | `tools/*.test.ts` | 参数验证逻辑 |
 | `errors.test.ts` | 错误构造 |
 
@@ -336,13 +316,20 @@ const agent = createAgent({ model, tools, systemPrompt, io: { fileIO, shellIO, t
 
 | 场景 | 范围 |
 |------|------|
-| 端到端对话流 | mock LLM → 验证工具调度 → 验证持久化 |
-| 多 provider 配置 | 不同 env → 正确的 model 创建 |
+| config → IO → tools 组装链路 | parseConfig 输出驱动 IO 和 tools 创建 |
+| file-read tool 端到端 | 写文件 → tool.execute → 读回 |
+| conversation 生命周期 | create → append → load |
 
 ### 覆盖率目标
 
 核心纯函数（pipeline、result、tools 验证）：≥ 90%
 IO 层：≥ 70%
+
+## 已知限制
+
+- `getModel` 需要类型断言（pi-ai 强类型 API 与动态 provider 不兼容）
+- AgentTool.execute 错误处理用 throw（受 AgentToolResult API 限制）
+- TavilyIO 测试需要网络（真实 API 调用）
 
 ## 不做的事（YAGNI）
 
