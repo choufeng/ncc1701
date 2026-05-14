@@ -9,7 +9,6 @@ export interface ToolDeps {
   readonly fileIO: FileIO
   readonly shellIO: ShellIO
   readonly tavilyIO: TavilyIO
-  readonly rootDir: string
 }
 
 export function createTools(deps: ToolDeps): AgentTool[] {

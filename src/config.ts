@@ -3,7 +3,8 @@ import { type Result, err, ok } from "./result"
 import type { ConfigError } from "./errors"
 
 export function parseConfig(
-  env: Record<string, string | undefined>
+  env: Record<string, string | undefined>,
+  cwd?: string,
 ): Result<AgentConfig, ConfigError> {
   const provider = env.NCC_PROVIDER
   if (!provider) {
@@ -33,6 +34,6 @@ export function parseConfig(
     model,
     apiKey,
     tavilyApiKey,
-    rootDir: env.NCC_ROOT_DIR ?? process.cwd(),
+    rootDir: env.NCC_ROOT_DIR ?? cwd ?? ".",
   })
 }

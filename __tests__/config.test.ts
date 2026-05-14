@@ -17,7 +17,18 @@ describe("parseConfig", () => {
     }
   })
 
-  it("uses default rootDir as cwd", () => {
+  it("uses default rootDir from cwd param", () => {
+    const result = parseConfig({
+      NCC_PROVIDER: "openai",
+      NCC_MODEL: "gpt-4o",
+      NCC_API_KEY: "sk-test",
+      NCC_TAVILY_KEY: "tvly-test",
+    }, "/custom/cwd")
+    expect(result.ok).toBe(true)
+    if (result.ok) expect(result.value.rootDir).toBe("/custom/cwd")
+  })
+
+  it("falls back to '.' when no cwd", () => {
     const result = parseConfig({
       NCC_PROVIDER: "openai",
       NCC_MODEL: "gpt-4o",
@@ -25,7 +36,7 @@ describe("parseConfig", () => {
       NCC_TAVILY_KEY: "tvly-test",
     })
     expect(result.ok).toBe(true)
-    if (result.ok) expect(result.value.rootDir).toBe(process.cwd())
+    if (result.ok) expect(result.value.rootDir).toBe(".")
   })
 
   it("returns ConfigError for missing provider", () => {

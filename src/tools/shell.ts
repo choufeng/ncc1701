@@ -9,6 +9,8 @@ export const ShellParams = Type.Object({
 
 export type ShellParams = Static<typeof ShellParams>
 
+const DEFAULT_TIMEOUT = 30_000 // 30s
+
 export function createShellTool(shellIO: ShellIO): AgentTool<typeof ShellParams, void> {
   return {
     name: "shell",
@@ -19,7 +21,7 @@ export function createShellTool(shellIO: ShellIO): AgentTool<typeof ShellParams,
       _id: string,
       params: ShellParams,
     ): Promise<AgentToolResult<void>> {
-      const result = await shellIO.exec(params.command, params.timeout ?? 30000)
+      const result = await shellIO.exec(params.command, params.timeout ?? DEFAULT_TIMEOUT)
       if (result.ok) {
         const output = result.value.stdout || result.value.stderr || "(无输出)"
         return { content: [{ type: "text", text: output }], details: undefined }

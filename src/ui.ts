@@ -8,6 +8,7 @@ import {
   ScrollBoxRenderable,
   SyntaxStyle,
 } from "@opentui/core"
+import { appendMarkdown as appendMd } from "./pipeline"
 
 export interface UIHandle {
   readonly renderer: CliRenderer
@@ -87,13 +88,7 @@ export async function createUI(): Promise<UIHandle> {
     scrollBox,
     titleBar,
     appendMarkdown(role: string, text: string): void {
-      const blocks: Record<string, string> = {
-        user: `\n## 用户\n${text}\n`,
-        assistant: `\n## 助手\n${text}`,
-        tool_call: `\n🔧 ${text}\n`,
-        tool_result: `\n🔧 ${text}\n`,
-      }
-      currentContent += blocks[role] ?? `\n${text}\n`
+      currentContent = appendMd(currentContent, role, text)
       markdown.content = currentContent
     },
     setStreaming(streaming: boolean): void {

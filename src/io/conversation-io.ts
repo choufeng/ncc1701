@@ -25,7 +25,7 @@ export function createConversationIO(baseDir: string): ConversationIO {
         await writeFile(sessionPath(id), "", "utf-8")
         return ok(id)
       } catch (e) {
-        return err({ kind: "session" as const, message: (e as Error).message, sessionId: "new" })
+        return err({ kind: "session" as const, message: e instanceof Error ? e.message : String(e), sessionId: "new" })
       }
     },
 
@@ -34,7 +34,7 @@ export function createConversationIO(baseDir: string): ConversationIO {
         await appendFile(sessionPath(sessionId), JSON.stringify(message) + "\n", "utf-8")
         return ok(undefined)
       } catch (e) {
-        return err({ kind: "session" as const, message: (e as Error).message, sessionId })
+        return err({ kind: "session" as const, message: e instanceof Error ? e.message : String(e), sessionId })
       }
     },
 
@@ -61,7 +61,7 @@ export function createConversationIO(baseDir: string): ConversationIO {
           .map((line) => JSON.parse(line) as ChatMessage)
         return ok(messages)
       } catch (e) {
-        return err({ kind: "session" as const, message: (e as Error).message, sessionId: id ?? "latest" })
+        return err({ kind: "session" as const, message: e instanceof Error ? e.message : String(e), sessionId: id ?? "latest" })
       }
     },
 
@@ -85,7 +85,7 @@ export function createConversationIO(baseDir: string): ConversationIO {
         )
         return ok(metas)
       } catch (e) {
-        return err({ kind: "session" as const, message: (e as Error).message, sessionId: "list" })
+        return err({ kind: "session" as const, message: e instanceof Error ? e.message : String(e), sessionId: "list" })
       }
     },
   }

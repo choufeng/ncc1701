@@ -3,10 +3,12 @@ import { ok, err } from "../result"
 import type { ShellError } from "../errors"
 import type { ShellIO, ShellOutput } from "./interfaces"
 
+const DEFAULT_TIMEOUT = 30_000 // 30s
+
 // ⚠️ 副作用：进程执行
 export function createShellIO(): ShellIO {
   return {
-    exec(command: string, timeout = 30000) {
+    exec(command: string, timeout = DEFAULT_TIMEOUT) {
       return new Promise((resolve) => {
         const child = spawn("sh", ["-c", command], {
           timeout,

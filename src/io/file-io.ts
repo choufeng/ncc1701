@@ -5,6 +5,9 @@ import type { FileIO } from "./interfaces"
 import { isPathSafe } from "../types"
 
 // ⚠️ 副作用：文件系统读写
+
+const MAX_FILE_SIZE = 51200 // 50KB
+
 export function createFileIO(rootDir: string): FileIO {
   return {
     async readFile(path: string) {
@@ -13,13 +16,12 @@ export function createFileIO(rootDir: string): FileIO {
       }
       try {
         const content = await fsReadFile(resolve(rootDir, path), "utf-8")
-        // 截断到 50KB
-        const truncated = content.length > 51200
-          ? content.slice(0, 51200) + "\n...[truncated]"
+        const truncated = content.length > MAX_FILE_SIZE
+          ? content.slice(0, MAX_FILE_SIZE) + "\n...[truncated]"
           : content
         return ok(truncated)
       } catch (e) {
-        return err({ kind: "file" as const, message: (e as Error).message, path })
+        return err({ kind: "file" as const, message: e instanceof Error ? e.message : String(e), path })
       }
     },
 
@@ -33,7 +35,7 @@ export function createFileIO(rootDir: string): FileIO {
         await fsWriteFile(full, content, "utf-8")
         return ok(undefined)
       } catch (e) {
-        return err({ kind: "file" as const, message: (e as Error).message, path })
+        return err({ kind: "file" as const, message: e instanceof Error ? e.message : String(e), path })
       }
     },
   }

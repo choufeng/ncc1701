@@ -42,7 +42,7 @@ export function createTavilyIO(apiKey: string): TavilyIO {
       } catch (e) {
         return err({
           kind: "network",
-          message: (e as Error).message,
+          message: e instanceof Error ? e.message : String(e),
           url,
         })
       }

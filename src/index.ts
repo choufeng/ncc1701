@@ -35,7 +35,7 @@ async function main(): Promise<void> {
   })
 
   // 2. 配置
-  const configResult = parseConfig(process.env as Record<string, string | undefined>)
+  const configResult = parseConfig(process.env as Record<string, string | undefined>, process.cwd())
   if (!configResult.ok) {
     console.error(`配置错误: ${configResult.error.message} (${configResult.error.field})`)
     process.exit(1)
@@ -110,10 +110,12 @@ async function main(): Promise<void> {
   }
 
   // 6. Agent
-  // getModel 强类型，动态 provider 需要 as any
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const model = getModel(config.provider as any, config.model as any) as any
-  const tools = createTools({ fileIO, shellIO, tavilyIO, rootDir: config.rootDir })
+  // getModel 要求强类型的 provider/model，动态值需要类型断言
+  const model = getModel(
+    config.provider as "anthropic",
+    config.model as "claude-sonnet-4-20250514",
+  )
+  const tools = createTools({ fileIO, shellIO, tavilyIO })
 
   const agent = new Agent({ streamFn: streamSimple })
   agent.state.model = model
@@ -122,7 +124,7 @@ async function main(): Promise<void> {
   agent.getApiKey = () => config.apiKey
 
   // 7. 事件订阅
-  agent.subscribe((event: any, _signal: AbortSignal): void => {
+  agent.subscribe((event: import("@mariozechner/pi-agent-core").AgentEvent, _signal: AbortSignal): void => {
     switch (event.type) {
       case "agent_start":
         ui.setStreaming(true)
@@ -192,6 +194,7 @@ async function main(): Promise<void> {
 }
 
 main().catch((e: unknown) => {
-  console.error("Fatal:", e)
+  const message = e instanceof Error ? e.message : String(e)
+  console.error("Fatal:", message)
   process.exit(1)
 })
