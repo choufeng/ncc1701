@@ -11,8 +11,7 @@ export function createShellIO(): ShellIO {
     exec(command: string, timeout = DEFAULT_TIMEOUT) {
       return new Promise((resolve) => {
         const child = spawn("sh", ["-c", command], {
-          timeout,
-          killSignal: "SIGTERM",
+          detached: true,
         })
 
         let stdout = ""
@@ -21,20 +20,36 @@ export function createShellIO(): ShellIO {
         child.stdout?.on("data", (data: Buffer) => { stdout += data.toString() })
         child.stderr?.on("data", (data: Buffer) => { stderr += data.toString() })
 
+        let timedOut = false
+
         child.on("close", (code) => {
-          if (code === 0) {
+          clearTimeout(timer)
+          if (timedOut) {
+            resolve(err({
+              kind: "shell" as const,
+              message: `Command timed out after ${timeout}ms`,
+              command,
+              exitCode: code,
+            }))
+          } else if (code === 0) {
             resolve(ok({ stdout, stderr, exitCode: 0 }))
           } else {
             resolve(err({
               kind: "shell" as const,
-              message: code === null ? "Process killed (timeout)" : `Exit code: ${code}`,
+              message: `Exit code: ${code}`,
               command,
               exitCode: code,
             }))
           }
         })
 
+        const timer = setTimeout(() => {
+          timedOut = true
+          try { process.kill(-child.pid!, "SIGKILL") } catch { child.kill("SIGKILL") }
+        }, timeout)
+
         child.on("error", (e) => {
+          clearTimeout(timer)
           resolve(err({
             kind: "shell" as const,
             message: e.message,

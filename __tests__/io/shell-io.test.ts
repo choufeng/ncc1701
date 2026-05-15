@@ -31,8 +31,8 @@ describe("ShellIO", () => {
 
   it("times out long running command", async () => {
     const io = createShellIO()
-    const result = await io.exec("sleep 10", 100)
+    const result = await io.exec("sleep 30", 50)
     expect(result.ok).toBe(false)
-    if (!result.ok) expect(result.error.message).toContain("timeout")
-  })
+    if (!result.ok) expect(result.error.message).toMatch(/timed out|timeout|killed/i)
+  }, 10_000)
 })
