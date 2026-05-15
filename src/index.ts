@@ -12,6 +12,8 @@ import { createTavilyIO } from "./io/tavily-io"
 import { createConversationIO } from "./io/conversation-io"
 import { createTools } from "./tools/index"
 import { createUI } from "./ui"
+import { appendMarkdown, appendStreamDelta } from "./pipeline"
+import { createQuitGuard } from "./quit-guard"
 import type { ChatMessage } from "./types"
 
 const SYSTEM_PROMPT = "你是一个终端助手，可以读写文件、执行命令、搜索网页。用中文回复。"
@@ -133,7 +135,7 @@ async function main(): Promise<void> {
       case "message_update": {
         const ame = event.assistantMessageEvent as AssistantMessageEvent
         if (ame.type === "text_delta") {
-          ui.appendMarkdown("assistant", ame.delta)
+          ui.appendStreamDelta(ame.delta)
         }
         if (ame.type === "toolcall_end") {
           ui.appendMarkdown("tool_call", ame.toolCall.name)
@@ -169,24 +171,31 @@ async function main(): Promise<void> {
   })
 
   // 8. 输入绑定
-  ui.input.onSubmit = () => {
-    const text = ui.input.editBuffer.getText().trim()
-    if (!text) return
+  // 注意：InputRenderable.submit() 未调用 super.submit()，onSubmit 回调不会触发
+  // 改用 "enter" 事件监听
+  ui.input.on("enter", (text: string) => {
+    const trimmed = text.trim()
+    if (!trimmed) return
 
-    ui.appendMarkdown("user", text)
+    ui.appendMarkdown("user", trimmed)
     conversationIO.appendMessage(sessionId, {
       role: "user",
-      content: text,
+      content: trimmed,
       ts: new Date().toISOString(),
     })
-    agent.prompt(text)
+    agent.prompt(trimmed)
 
     // 清空输入
     ui.input.setText("")
-  }
+  })
 
-  // Ctrl+C 退出
+  // Ctrl+C 双击退出
+  const shouldQuit = createQuitGuard(1000)
   process.on("SIGINT", () => {
+    if (!shouldQuit()) {
+      ui.updateTitle("再按一次 Ctrl+C 退出")
+      return
+    }
     agent.abort()
     ui.renderer.destroy()
     process.exit(0)
