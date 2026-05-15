@@ -169,21 +169,23 @@ async function main(): Promise<void> {
   })
 
   // 8. 输入绑定
-  ui.input.onSubmit = () => {
-    const text = ui.input.editBuffer.getText().trim()
-    if (!text) return
+  // 注意：InputRenderable.submit() 未调用 super.submit()，onSubmit 回调不会触发
+  // 改用 "enter" 事件监听
+  ui.input.on("enter", (text: string) => {
+    const trimmed = text.trim()
+    if (!trimmed) return
 
-    ui.appendMarkdown("user", text)
+    ui.appendMarkdown("user", trimmed)
     conversationIO.appendMessage(sessionId, {
       role: "user",
-      content: text,
+      content: trimmed,
       ts: new Date().toISOString(),
     })
-    agent.prompt(text)
+    agent.prompt(trimmed)
 
     // 清空输入
     ui.input.setText("")
-  }
+  })
 
   // Ctrl+C 退出
   process.on("SIGINT", () => {
