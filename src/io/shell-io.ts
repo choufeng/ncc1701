@@ -10,7 +10,9 @@ export function createShellIO(): ShellIO {
   return {
     exec(command: string, timeout = DEFAULT_TIMEOUT) {
       return new Promise((resolve) => {
-        const child = spawn("sh", ["-c", command])
+        const child = spawn("sh", ["-c", command], {
+          detached: true,
+        })
 
         let stdout = ""
         let stderr = ""
@@ -43,7 +45,7 @@ export function createShellIO(): ShellIO {
 
         const timer = setTimeout(() => {
           timedOut = true
-          child.kill("SIGKILL")
+          try { process.kill(-child.pid!, "SIGKILL") } catch { child.kill("SIGKILL") }
         }, timeout)
 
         child.on("error", (e) => {
