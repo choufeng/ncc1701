@@ -13,6 +13,7 @@ import { createConversationIO } from "./io/conversation-io"
 import { createTools } from "./tools/index"
 import { createUI } from "./ui"
 import { appendMarkdown, appendStreamDelta } from "./pipeline"
+import { createQuitGuard } from "./quit-guard"
 import type { ChatMessage } from "./types"
 
 const SYSTEM_PROMPT = "你是一个终端助手，可以读写文件、执行命令、搜索网页。用中文回复。"
@@ -188,8 +189,13 @@ async function main(): Promise<void> {
     ui.input.setText("")
   })
 
-  // Ctrl+C 退出
+  // Ctrl+C 双击退出
+  const shouldQuit = createQuitGuard(1000)
   process.on("SIGINT", () => {
+    if (!shouldQuit()) {
+      ui.updateTitle("再按一次 Ctrl+C 退出")
+      return
+    }
     agent.abort()
     ui.renderer.destroy()
     process.exit(0)
