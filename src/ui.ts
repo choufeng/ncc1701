@@ -8,7 +8,7 @@ import {
   ScrollBoxRenderable,
   SyntaxStyle,
 } from "@opentui/core"
-import { appendMarkdown as appendMd } from "./pipeline"
+import { appendMarkdown as appendMd, appendStreamDelta as appendDelta } from "./pipeline"
 
 export interface UIHandle {
   readonly renderer: CliRenderer
@@ -17,6 +17,7 @@ export interface UIHandle {
   readonly scrollBox: ScrollBoxRenderable
   readonly titleBar: TextRenderable
   appendMarkdown(role: string, text: string): void
+  appendStreamDelta(delta: string): void
   setStreaming(streaming: boolean): void
   updateTitle(info: string): void
 }
@@ -89,6 +90,10 @@ export async function createUI(): Promise<UIHandle> {
     titleBar,
     appendMarkdown(role: string, text: string): void {
       currentContent = appendMd(currentContent, role, text)
+      markdown.content = currentContent
+    },
+    appendStreamDelta(delta: string): void {
+      currentContent = appendDelta(currentContent, delta)
       markdown.content = currentContent
     },
     setStreaming(streaming: boolean): void {

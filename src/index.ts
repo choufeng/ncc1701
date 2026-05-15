@@ -12,6 +12,7 @@ import { createTavilyIO } from "./io/tavily-io"
 import { createConversationIO } from "./io/conversation-io"
 import { createTools } from "./tools/index"
 import { createUI } from "./ui"
+import { appendMarkdown, appendStreamDelta } from "./pipeline"
 import type { ChatMessage } from "./types"
 
 const SYSTEM_PROMPT = "你是一个终端助手，可以读写文件、执行命令、搜索网页。用中文回复。"
@@ -133,7 +134,7 @@ async function main(): Promise<void> {
       case "message_update": {
         const ame = event.assistantMessageEvent as AssistantMessageEvent
         if (ame.type === "text_delta") {
-          ui.appendMarkdown("assistant", ame.delta)
+          ui.appendStreamDelta(ame.delta)
         }
         if (ame.type === "toolcall_end") {
           ui.appendMarkdown("tool_call", ame.toolCall.name)
