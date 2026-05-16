@@ -1,7 +1,8 @@
 ---
 name: molecule-jira-fetch
 description: >-
-  获取 Jira Issue 信息及其关联 Issue。触发场景：用户提供 Jira URL 或 Issue Key 时。
+  获取 Jira Issue 信息及其关联 Issue。
+  触发场景：用户提供 Jira URL 或 Issue Key 时。
 layer: molecule
 delegates-to:
   - atom-jira-read

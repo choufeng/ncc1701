@@ -1,7 +1,8 @@
 ---
 name: molecule-summary
 description: >-
-  生成最终分析总结并使用 Skill 展示。触发场景：所有分析步骤完成后需要向用户呈现结果时。
+  生成最终分析总结并使用 Skill 展示。
+  触发场景：所有分析步骤完成后需要向用户呈现结果时。
 layer: molecule
 delegates-to:
   - atom-summary-generate

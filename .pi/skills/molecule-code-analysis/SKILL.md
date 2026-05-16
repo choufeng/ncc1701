@@ -1,7 +1,8 @@
 ---
 name: molecule-code-analysis
 description: >-
-  分析代码库中与需求相关的代码。触发场景：需要评估需求对代码的影响时。
+  分析代码库中与需求相关的代码。
+  触发场景：需要评估需求对代码的影响时。
 layer: molecule
 delegates-to:
   - atom-code-search
@@ -24,9 +25,7 @@ delegates-to:
 
 1. 从上下文融合结果中提取搜索关键词
 2. 加载并执行 `atom-code-search`：传入 keywords，定位相关代码文件
-3. 并行执行：
-   - 加载并执行 `atom-code-trace`：传入匹配文件，追踪调用链
-   - （如有多个独立搜索方向，可并发追踪）
+3. 加载并执行 `atom-code-trace`：传入匹配文件，追踪调用链
 4. 加载并执行 `atom-code-evaluate`：传入搜索结果 + 调用图 + 融合上下文，评估影响
 5. 输出代码分析结果
 

@@ -1,7 +1,8 @@
 ---
 name: molecule-memory-merge
 description: >-
-  搜索记忆库并融合为需求上下文。触发场景：需要结合已有知识和经验分析需求时。
+  搜索记忆库并融合为需求上下文。
+  触发场景：需要结合已有知识和经验分析需求时。
 layer: molecule
 delegates-to:
   - atom-memory-search
