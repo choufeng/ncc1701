@@ -5,3 +5,6 @@ dist
 *.log
 .venv
 __pycache__
+
+# pi package auto-installs
+.pi/npm/
