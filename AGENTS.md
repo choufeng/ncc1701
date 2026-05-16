@@ -123,3 +123,22 @@
 6. **Synergy with Iron Law #1**: Pure functions don't throw—they return `Result`. Side-effect functions may throw, but boundary layers must catch and convert to `Result`. Error handling itself is expressed as pure functions (`mapError`, `match`).
 
 7. **No Unhandled Async Errors**: All `Promise` rejections must be handled. Inside `async` functions, wrap expected failures with `Result`; let unexpected ones propagate naturally. Top-level entry points (`main`) must have a global catch-all.
+
+## Skill Graph Routing Rules
+
+When receiving a user message, first classify intent:
+
+### Direct Answer (direct)
+Match: pure Q&A, concept explanation, code snippet requests, chat, no operational intent
+Action: respond directly; do not invoke any skill
+
+### Tool Dispatch (tool)
+Match: action verb + explicit tool reference (e.g., "query database", "call API", "send message", "run migration")
+Action: invoke the `tool-dispatcher` subagent
+
+### Professional Workflow (compound)
+Match: matches the description trigger scenario of any compound SKILL.md
+Action: `read` the corresponding compound SKILL.md; execute the three-tier molecule → atom workflow
+
+### Ambiguous
+When none of the above match, determine the optimal path independently
