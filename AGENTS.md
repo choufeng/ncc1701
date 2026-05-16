@@ -123,3 +123,22 @@
 6. **Synergy with Iron Law #1**: Pure functions don't throw—they return `Result`. Side-effect functions may throw, but boundary layers must catch and convert to `Result`. Error handling itself is expressed as pure functions (`mapError`, `match`).
 
 7. **No Unhandled Async Errors**: All `Promise` rejections must be handled. Inside `async` functions, wrap expected failures with `Result`; let unexpected ones propagate naturally. Top-level entry points (`main`) must have a global catch-all.
+
+## Skill Graph 路由规则
+
+当接收到用户消息时，先分析意图进行分类：
+
+### 直接回答（direct）
+匹配条件：纯知识问答、概念解释、代码片段询问、聊天、无操作意图
+行为：直接回答，不触发任何 skill
+
+### 调度工具（tool）
+匹配条件：含操作动词 + 明确工具指向（如"查数据库"、"调 API"、"发消息"、"执行迁移"）
+行为：调用 `tool-dispatcher` subagent 执行
+
+### 专业流程（compound）
+匹配条件：匹配任一 compound SKILL.md description 中的触发场景
+行为：`read` 对应 compound SKILL.md，按 molecule → atom 三级流程执行
+
+### 模糊场景
+上述均不匹配时，自行判断最优路径
