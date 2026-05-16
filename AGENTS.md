@@ -124,21 +124,21 @@
 
 7. **No Unhandled Async Errors**: All `Promise` rejections must be handled. Inside `async` functions, wrap expected failures with `Result`; let unexpected ones propagate naturally. Top-level entry points (`main`) must have a global catch-all.
 
-## Skill Graph 路由规则
+## Skill Graph Routing Rules
 
-当接收到用户消息时，先分析意图进行分类：
+When receiving a user message, first classify intent:
 
-### 直接回答（direct）
-匹配条件：纯知识问答、概念解释、代码片段询问、聊天、无操作意图
-行为：直接回答，不触发任何 skill
+### Direct Answer (direct)
+Match: pure Q&A, concept explanation, code snippet requests, chat, no operational intent
+Action: respond directly; do not invoke any skill
 
-### 调度工具（tool）
-匹配条件：含操作动词 + 明确工具指向（如"查数据库"、"调 API"、"发消息"、"执行迁移"）
-行为：调用 `tool-dispatcher` subagent 执行
+### Tool Dispatch (tool)
+Match: action verb + explicit tool reference (e.g., "query database", "call API", "send message", "run migration")
+Action: invoke the `tool-dispatcher` subagent
 
-### 专业流程（compound）
-匹配条件：匹配任一 compound SKILL.md description 中的触发场景
-行为：`read` 对应 compound SKILL.md，按 molecule → atom 三级流程执行
+### Professional Workflow (compound)
+Match: matches the description trigger scenario of any compound SKILL.md
+Action: `read` the corresponding compound SKILL.md; execute the three-tier molecule → atom workflow
 
-### 模糊场景
-上述均不匹配时，自行判断最优路径
+### Ambiguous
+When none of the above match, determine the optimal path independently

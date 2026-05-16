@@ -4,7 +4,7 @@ import * as fs from "fs";
 import * as path from "path";
 
 // ============================================================================
-// 1. Skill Graph 拓扑定义
+// 1. Skill Graph Topology Definition
 // ============================================================================
 
 interface SkillNode {
@@ -40,7 +40,7 @@ function loadSkillGraph(cwd: string): void {
 }
 
 // ============================================================================
-// 2. 运行时状态
+// 2. Runtime State
 // ============================================================================
 
 interface LoadingState {
@@ -62,7 +62,7 @@ function createLoadingState(): LoadingState {
 }
 
 // ============================================================================
-// 3. 核心验证逻辑
+// 3. Core Validation Logic
 // ============================================================================
 
 function detectSkillNameFromPath(path: string): string | null {
@@ -76,16 +76,16 @@ function validateTopDownLoading(
 ): { valid: boolean; reason?: string; suggestion?: string } {
   const node = SKILL_MAP.get(targetSkill);
 
-  // 不在 Graph 中的 skill，不干预
+  // Skill not in graph — allow pass-through
   if (!node) return { valid: true };
 
-  // Compound 始终是入口点
+  // Compound is always a valid entry point
   if (node.layer === "compound") return { valid: true };
 
-  // standalone skill 允许独立调用
+  // Standalone skills are allowed to be invoked independently
   if (node.standalone) return { valid: true };
 
-  // Molecule：检查父 compound 是否已加载
+  // Molecule: verify that a parent compound has been loaded
   if (node.layer === "molecule") {
     const parents = SKILL_GRAPH.filter(
       (s) =>
@@ -94,15 +94,15 @@ function validateTopDownLoading(
     if (!parents.some((p) => state.loadedSkills.has(p.name))) {
       return {
         valid: false,
-        reason: `跨层违规：molecule "${targetSkill}" 被直接加载，但其父 compound 尚未加载`,
-        suggestion: `请先加载以下 compound 之一：${parents
+        reason: `Cross-layer violation: molecule "${targetSkill}" was loaded directly, but its parent compound has not been loaded`,
+        suggestion: `Load one of the following compounds first: ${parents
           .map((p) => p.name)
           .join(", ")}`,
       };
     }
   }
 
-  // Atom：检查父 molecule 是否已加载
+  // Atom: verify that a parent molecule has been loaded
   if (node.layer === "atom") {
     const parents = SKILL_GRAPH.filter(
       (s) =>
@@ -111,8 +111,8 @@ function validateTopDownLoading(
     if (!parents.some((p) => state.loadedSkills.has(p.name))) {
       return {
         valid: false,
-        reason: `跨层违规：atom "${targetSkill}" 被直接加载，跳过了 molecule 层`,
-        suggestion: `请先加载以下 molecule 之一：${parents
+        reason: `Cross-layer violation: atom "${targetSkill}" was loaded directly, skipping the molecule layer`,
+        suggestion: `Load one of the following molecules first: ${parents
           .map((p) => p.name)
           .join(", ")}`,
       };
@@ -132,7 +132,7 @@ function detectCircularDependency(
     if (seen.has(skill)) {
       return {
         hasCycle: true,
-        cycle: `检测到潜在循环依赖：${skill} 被重复加载`,
+        cycle: `Potential circular dependency detected: "${skill}" was loaded more than once`,
       };
     }
     seen.add(skill);
@@ -141,16 +141,16 @@ function detectCircularDependency(
 }
 
 // ============================================================================
-// 4. 生成 Skill Graph 拓扑提示
+// 4. Skill Graph Topology Prompt Generator
 // ============================================================================
 
 function generateGraphPrompt(): string {
   if (SKILL_GRAPH.length === 0) {
-    return `\n## Skill Graph\n\n当前无已注册的 Skill Graph 流程。使用 create-skill-graph skill 来创建。\n`;
+    return `\n## Skill Graph\n\nNo registered Skill Graph workflows. Use the create-skill-graph skill to create one.\n`;
   }
 
-  let prompt = `\n## Skill Graph 加载规则\n\n`;
-  prompt += `你必须严格按照以下层级结构加载 skill，从顶层 compound 开始，逐层向下：\n\n`;
+  let prompt = `\n## Skill Graph Loading Rules\n\n`;
+  prompt += `You must load skills strictly according to the following hierarchy, starting from the top-level compound and descending layer by layer:\n\n`;
 
   for (const compound of SKILL_GRAPH.filter(
     (s) => s.layer === "compound"
@@ -168,60 +168,60 @@ function generateGraphPrompt(): string {
     prompt += `\n`;
   }
 
-  prompt += `### 强制规则\n`;
-  prompt += `1. **必须从 compound 开始**：先加载 compound SKILL.md，再按需加载其依赖的 molecule\n`;
-  prompt += `2. **不跨层调用**：compound 只调用 molecule，molecule 只调用 atom，atom 不调用任何 skill\n`;
-  prompt += `3. **按需加载**：只有在执行到需要某层 skill 的步骤时才 read 对应的 SKILL.md\n`;
-  prompt += `4. **禁止循环依赖**：不得重复加载同一个 skill\n\n`;
+  prompt += `### Mandatory Rules\n`;
+  prompt += `1. **Start from the compound**: load the compound SKILL.md first, then load its dependent molecules on demand\n`;
+  prompt += `2. **No cross-layer calls**: compounds only invoke molecules, molecules only invoke atoms, atoms invoke no skills\n`;
+  prompt += `3. **Load on demand**: only read a SKILL.md when the execution step that needs it is reached\n`;
+  prompt += `4. **No circular dependencies**: never load the same skill more than once\n\n`;
 
   const standaloneAtoms = SKILL_GRAPH.filter(
     (s) => s.layer === "atom" && s.standalone
   );
   if (standaloneAtoms.length > 0) {
-    prompt += `### Standalone Skills（可独立调用）\n`;
-    prompt += `以下 atom 被标记为 standalone，可被子 Agent 直接调用：\n`;
+    prompt += `### Standalone Skills (Direct Invocation Allowed)\n`;
+    prompt += `The following atoms are marked as standalone and may be invoked directly by sub-agents:\n`;
     for (const atom of standaloneAtoms) {
       prompt += `- \`${atom.name}\`\n`;
     }
     prompt += `\n`;
   }
 
-  prompt += `### 加载模板\n`;
-  prompt += `1. read compound-xxx/SKILL.md        ← 入口点，了解整体流程\n`;
-  prompt += `2. read molecule-yyy/SKILL.md        ← 按需加载当前步骤需要的 molecule\n`;
-  prompt += `3. read atom-zzz/SKILL.md            ← molecule 指引你加载需要的 atom\n`;
-  prompt += `4. 执行 atom 的操作\n`;
-  prompt += `5. 返回 molecule 继续下一步骤\n`;
+  prompt += `### Loading Template\n`;
+  prompt += `1. read compound-xxx/SKILL.md        ← entry point; understand the full workflow\n`;
+  prompt += `2. read molecule-yyy/SKILL.md        ← load the molecule needed for the current step\n`;
+  prompt += `3. read atom-zzz/SKILL.md            ← the molecule directs you to load the required atom\n`;
+  prompt += `4. Execute the atom's operation\n`;
+  prompt += `5. Return to the molecule to continue with the next step\n`;
 
   return prompt;
 }
 
 // ============================================================================
-// 5. 扩展注册
+// 5. Extension Registration
 // ============================================================================
 
 export default function skillGraphEnforcer(api: ExtensionAPI): void {
   const state = createLoadingState();
 
-  // 启动时加载拓扑
+  // Load topology on startup
   loadSkillGraph(process.cwd());
 
-  // 每次 Agent 启动前注入 Skill Graph 拓扑
+  // Inject Skill Graph topology before each agent start
   api.on("before_agent_start", (ctx) => {
-    // 重新加载拓扑（可能被 create-skill-graph 更新）
+    // Reload topology (may have been updated by create-skill-graph)
     loadSkillGraph(process.cwd());
     const graphPrompt = generateGraphPrompt();
     ctx.additionalContext = (ctx.additionalContext || "") + graphPrompt;
   });
 
-  // 拦截 read 工具调用，验证层级关系
+  // Intercept read tool calls to validate hierarchy
   api.on("tool_call", (ctx) => {
     if (ctx.toolName !== "read") return;
 
     const skillName = detectSkillNameFromPath(ctx.args.path || "");
     if (!skillName) return;
 
-    // 循环检测
+    // Circular dependency detection
     const cycleCheck = detectCircularDependency(skillName, state);
     if (cycleCheck.hasCycle) {
       api.showMessage({
@@ -231,7 +231,7 @@ export default function skillGraphEnforcer(api: ExtensionAPI): void {
       return;
     }
 
-    // 层级验证
+    // Hierarchy validation
     const validation = validateTopDownLoading(skillName, state);
     if (!validation.valid) {
       api.showMessage({
@@ -241,7 +241,7 @@ export default function skillGraphEnforcer(api: ExtensionAPI): void {
       return;
     }
 
-    // 记录加载历史
+    // Record load history
     state.loadHistory.push({
       skill: skillName,
       timestamp: Date.now(),
@@ -249,7 +249,7 @@ export default function skillGraphEnforcer(api: ExtensionAPI): void {
     });
   });
 
-  // read 返回后更新加载状态
+  // Update loading state after read returns
   api.on("tool_result", (ctx) => {
     if (ctx.toolName !== "read") return;
 
@@ -261,13 +261,13 @@ export default function skillGraphEnforcer(api: ExtensionAPI): void {
 
     state.loadedSkills.add(skillName);
 
-    // 记录 activeCompound
+    // Track active compound
     if (node.layer === "compound") {
       state.activeCompound = skillName;
     }
   });
 
-  // 会话重置
+  // Reset state on new session
   api.on("session_start", () => {
     loadSkillGraph(process.cwd());
     state.loadedSkills.clear();
