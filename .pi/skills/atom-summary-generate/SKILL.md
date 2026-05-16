@@ -1,7 +1,8 @@
 ---
 name: atom-summary-generate
 description: >-
-  根据所有分析结果生成最终总结报告。触发场景：所有分析步骤完成后需要输出结论时。
+  根据所有分析结果生成最终总结报告。
+  触发场景：所有分析步骤完成后需要输出结论时。
 layer: atom
 metadata:
   standalone: true

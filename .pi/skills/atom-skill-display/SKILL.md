@@ -1,7 +1,8 @@
 ---
 name: atom-skill-display
 description: >-
-  使用指定 Skill 格式化并展示总结内容到用户界面。触发场景：需要以特定格式展示结果时。
+  使用指定 Skill 格式化并展示总结内容到用户界面。
+  触发场景：需要以特定格式展示结果时。
 layer: atom
 metadata:
   standalone: true

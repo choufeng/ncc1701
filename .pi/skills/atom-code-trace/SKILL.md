@@ -1,7 +1,8 @@
 ---
 name: atom-code-trace
 description: >-
-  追踪指定代码的调用链和依赖关系。触发场景：需要理解代码的执行路径或依赖关系时。
+  追踪指定代码的调用链和依赖关系。
+  触发场景：需要理解代码的执行路径或依赖关系时。
 layer: atom
 metadata:
   standalone: true

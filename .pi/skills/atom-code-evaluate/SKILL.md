@@ -1,7 +1,8 @@
 ---
 name: atom-code-evaluate
 description: >-
-  评估与需求相关的代码，识别实现难度、风险和影响范围。触发场景：需要评估代码变更的影响时。
+  评估与需求相关的代码，识别实现难度、风险和影响范围。
+  触发场景：需要评估代码变更的影响时。
 layer: atom
 metadata:
   standalone: true

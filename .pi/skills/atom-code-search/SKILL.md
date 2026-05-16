@@ -1,7 +1,8 @@
 ---
 name: atom-code-search
 description: >-
-  在代码库中搜索与需求相关的文件和代码片段。触发场景：需要定位与需求相关的代码时。
+  在代码库中搜索与需求相关的文件和代码片段。
+  触发场景：需要定位与需求相关的代码时。
 layer: atom
 metadata:
   standalone: true
