@@ -1,5 +1,7 @@
 import type { ExtensionAPI } from "@mariozechner/pi-coding-agent";
 import { Type } from "@sinclair/typebox";
+import * as fs from "fs";
+import * as path from "path";
 
 // ============================================================================
 // 1. Skill Graph 拓扑定义
@@ -12,108 +14,30 @@ interface SkillNode {
   standalone: boolean;
 }
 
-const SKILL_GRAPH: SkillNode[] = [
-  // Compounds
-  {
-    name: "compound-requirement-analysis",
-    layer: "compound",
-    delegatesTo: [
-      "molecule-jira-fetch",
-      "molecule-memory-merge",
-      "molecule-code-analysis",
-      "molecule-summary",
-    ],
-    standalone: false,
-  },
+interface SkillGraphConfig {
+  skills: SkillNode[];
+}
 
-  // Molecules
-  {
-    name: "molecule-jira-fetch",
-    layer: "molecule",
-    delegatesTo: ["atom-jira-read", "atom-jira-related"],
-    standalone: false,
-  },
-  {
-    name: "molecule-memory-merge",
-    layer: "molecule",
-    delegatesTo: ["atom-memory-search", "atom-context-merge"],
-    standalone: false,
-  },
-  {
-    name: "molecule-code-analysis",
-    layer: "molecule",
-    delegatesTo: [
-      "atom-code-search",
-      "atom-code-trace",
-      "atom-code-evaluate",
-    ],
-    standalone: false,
-  },
-  {
-    name: "molecule-summary",
-    layer: "molecule",
-    delegatesTo: ["atom-summary-generate", "atom-skill-display"],
-    standalone: false,
-  },
+let SKILL_GRAPH: SkillNode[] = [];
+let SKILL_MAP: Map<string, SkillNode> = new Map();
 
-  // Atoms (all standalone)
-  {
-    name: "atom-jira-read",
-    layer: "atom",
-    delegatesTo: [],
-    standalone: true,
-  },
-  {
-    name: "atom-jira-related",
-    layer: "atom",
-    delegatesTo: [],
-    standalone: true,
-  },
-  {
-    name: "atom-memory-search",
-    layer: "atom",
-    delegatesTo: [],
-    standalone: true,
-  },
-  {
-    name: "atom-context-merge",
-    layer: "atom",
-    delegatesTo: [],
-    standalone: true,
-  },
-  {
-    name: "atom-code-search",
-    layer: "atom",
-    delegatesTo: [],
-    standalone: true,
-  },
-  {
-    name: "atom-code-trace",
-    layer: "atom",
-    delegatesTo: [],
-    standalone: true,
-  },
-  {
-    name: "atom-code-evaluate",
-    layer: "atom",
-    delegatesTo: [],
-    standalone: true,
-  },
-  {
-    name: "atom-summary-generate",
-    layer: "atom",
-    delegatesTo: [],
-    standalone: true,
-  },
-  {
-    name: "atom-skill-display",
-    layer: "atom",
-    delegatesTo: [],
-    standalone: true,
-  },
-];
-
-const SKILL_MAP = new Map(SKILL_GRAPH.map((s) => [s.name, s]));
+function loadSkillGraph(cwd: string): void {
+  const configPath = path.join(cwd, ".pi", "skill-graph.json");
+  try {
+    if (fs.existsSync(configPath)) {
+      const raw = fs.readFileSync(configPath, "utf-8");
+      const config: SkillGraphConfig = JSON.parse(raw);
+      SKILL_GRAPH = config.skills;
+      SKILL_MAP = new Map(SKILL_GRAPH.map((s) => [s.name, s]));
+    } else {
+      SKILL_GRAPH = [];
+      SKILL_MAP = new Map();
+    }
+  } catch {
+    SKILL_GRAPH = [];
+    SKILL_MAP = new Map();
+  }
+}
 
 // ============================================================================
 // 2. 运行时状态
@@ -221,6 +145,10 @@ function detectCircularDependency(
 // ============================================================================
 
 function generateGraphPrompt(): string {
+  if (SKILL_GRAPH.length === 0) {
+    return `\n## Skill Graph\n\n当前无已注册的 Skill Graph 流程。使用 create-skill-graph skill 来创建。\n`;
+  }
+
   let prompt = `\n## Skill Graph 加载规则\n\n`;
   prompt += `你必须严格按照以下层级结构加载 skill，从顶层 compound 开始，逐层向下：\n\n`;
 
@@ -275,8 +203,13 @@ function generateGraphPrompt(): string {
 export default function skillGraphEnforcer(api: ExtensionAPI): void {
   const state = createLoadingState();
 
+  // 启动时加载拓扑
+  loadSkillGraph(process.cwd());
+
   // 每次 Agent 启动前注入 Skill Graph 拓扑
   api.on("before_agent_start", (ctx) => {
+    // 重新加载拓扑（可能被 create-skill-graph 更新）
+    loadSkillGraph(process.cwd());
     const graphPrompt = generateGraphPrompt();
     ctx.additionalContext = (ctx.additionalContext || "") + graphPrompt;
   });
@@ -336,6 +269,7 @@ export default function skillGraphEnforcer(api: ExtensionAPI): void {
 
   // 会话重置
   api.on("session_start", () => {
+    loadSkillGraph(process.cwd());
     state.loadedSkills.clear();
     state.activeCompound = null;
     state.loadHistory = [];
