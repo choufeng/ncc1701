@@ -1,270 +1,269 @@
 ---
 name: create-skill-graph
 description: >-
-  创建 Skill Graph 三级架构的 Skill 文件。当用户需要新建业务流程、定义工作流 compound/molecule/atom 时触发。
-  触发关键词：创建 Skill、新建流程、定义工作流、创建 compound、新建 molecule、新建 atom。
+  Create Skill Graph files (compound, molecule, atom) and their topology configuration. Use when the user requests a new business process, workflow definition, or individual skill creation.
+  Trigger keywords: create skill, new workflow, define process, create compound, create molecule, create atom.
 ---
 
-## 用途
-根据用户需求，创建 Skill Graph 文件（compound / molecule / atom）及其拓扑配置。支持两种模式：完整 compound 创建（自顶向下）和增量单层创建（自底向上）。
+## Purpose
+Create Skill Graph files and topology configuration based on user requirements. Supports two modes: full compound creation (top-down) and incremental single-layer creation (bottom-up).
 
-## 三层架构
-
-```
-compound（化合物）  → 业务流程入口，人类驱动点，编排 molecule
-molecule（分子）    → 流程阶段，编排 atom，组合 2-10 个原子
-atom（原子）        → 单一职责操作，standalone: true，不调用其他 skill
-```
-
-## 设计哲学
-- **尽量下压决策**：编排逻辑写进正文，不依赖 agent 运行时判断
-- **单向依赖**：依赖只能向下（compound → molecule → atom），严禁循环
-- **不跨层依赖**：compound 不直接调用 atom，必须通过 molecule
-- **原子不调用任何 skill**：原子是终止节点
-- **人类驱动化合物**：compound 需要人在起点给意图，关键决策点介入
-
-## 人机交互规则
-> **铁律：一次只问一个问题。** 每次与用户交互时，仅提出一个问题。
-> **选项推荐规则：** 提供 2-4 个选项 + ⭐ 推荐标记 + 自定义输入。
-
----
-
-## 创建模式 / 执行步骤
-
-### 步骤 0：确定创建模式
-
-首先向用户确认创建模式：
+## Three-Tier Architecture
 
 ```
-要创建什么？
-
-  A) ⭐ 完整流程 — 一次规划完整的 compound → molecule → atom（见"模式 A"）
-  B) 增量单层 — 只创建一个 atom / molecule / compound（见"模式 B"）
+compound  →  High-level orchestration, human-driven, delegates to molecules
+molecule  →  Workflow stage, explicit orchestration of 2–10 atoms
+atom      →  Single-responsibility operation, standalone, never calls other skills
 ```
+
+## Design Philosophy
+- **Push decisions down**: Encode orchestration logic in skill body text; don't leave it to agent runtime judgment.
+- **Unidirectional dependencies**: Dependencies flow only downward (compound → molecule → atom). Circular dependencies are forbidden.
+- **No cross-layer calls**: Compounds must not call atoms directly; they go through molecules.
+- **Atoms call no skills**: Atoms are leaf nodes. They never reference or invoke other skills.
+- **Human-driven compounds**: Compounds require human intent at the entry point and human confirmation at key decision gates.
+
+## Human-Interaction Rules
+> **Iron Rule: One question at a time.** Ask only one question per interaction. Wait for the answer before proceeding.
+> **Option Recommendation Rule:** Present 2–4 options + ⭐ recommended pick + free-text fallback.
 
 ---
 
-## 模式 A：完整 compound 创建（自顶向下）
+## Creation Modes / Execution Steps
 
-### A-1：理解需求
-分析用户描述的业务需求，提取目标、输入、输出、约束。信息不完整时按人机交互规则逐步询问。
+### Step 0: Determine Creation Mode
 
-### A-2：规划 compound
-向用户确认 compound 结构：
+Ask the user which mode they want:
 
 ```
-拟创建 compound：[名称]
+What would you like to create?
 
-业务流程分解：
-  阶段 1：[molecule 1 名称] — [职责描述]
-  阶段 2：[molecule 2 名称] — [职责描述]
+  A) ⭐ Full workflow — plan a complete compound → molecule → atom tree in one pass (see "Mode A")
+  B) Incremental — create a single atom, molecule, or compound (see "Mode B")
+```
+
+---
+
+## Mode A: Full Compound Creation (Top-Down)
+
+### A-1: Understand the Requirement
+Analyze the user's request. Extract: goal, inputs, outputs, constraints. If information is incomplete, ask one question at a time following the human-interaction rules.
+
+### A-2: Plan the Compound
+Confirm the compound structure with the user:
+
+```
+Proposed compound: <name>
+
+Business process breakdown:
+  Stage 1: <molecule name> — <responsibility>
+  Stage 2: <molecule name> — <responsibility>
   ...
 
-人类驱动点：[需要在哪些决策点让用户介入？]
+Human decision gates: <at which decision points should the user intervene?>
 
-确认以上规划？
-  A) ⭐ 确认，按此创建
-  B) 调整阶段划分
-  C) 调整人类驱动点
-  D) 自定义：___
+Confirm?
+  A) ⭐ Confirm, proceed
+  B) Adjust stage breakdown
+  C) Adjust decision gates
+  D) Custom: ___
 ```
 
-### A-3：逐阶段规划 molecule
-对每个阶段，逐一询问 atom 分解：
+### A-3: Plan Each Molecule
+For each stage, ask about atom decomposition one at a time:
 
 ```
-阶段：[molecule 名称]
+Stage: <molecule name>
 
-需要哪些原子操作？
-  1. [atom 1 名称] — [操作描述]
-  2. [atom 2 名称] — [操作描述]
+Which atomic operations are needed?
+  1. <atom name> — <description>
+  2. <atom name> — <description>
   ...
 
-编排顺序：[串行 / 并行 / 条件分支]
+Orchestration: <sequential / parallel / conditional branching>
 
-确认？
-  A) ⭐ 确认
-  B) 调整原子操作
-  C) 自定义：___
+Confirm?
+  A) ⭐ Confirm
+  B) Adjust atoms
+  C) Custom: ___
 ```
 
-重复直到所有 molecule 确认。完成后跳到"创建文件"。
+Repeat until all molecules are confirmed. Then proceed to "Creating Files."
 
 ---
 
-## 模式 B：增量单层创建（自底向上）
+## Mode B: Incremental Single-Layer Creation (Bottom-Up)
 
-### B-1：确定层级
+### B-1: Determine the Layer
 
-询问以下问题（逐个询问，每次一个），确定应创建什么层级的 skill：
+Ask the following questions one at a time to determine which layer to create:
 
-**第一个问题**：
+**First question:**
 ```
-这个 skill 是要做什么？
+What is the scope of this skill?
 
-  A) 只做一件事，且不需要调用其他任何 skill → 创建 atom
-  B) 组合 2-10 个已有的原子，完成一个有范围的任务 → 创建 molecule
-  C) 编排多个分子，完成跨域复杂任务 → 创建 compound
-  D) 不确定，帮我分析 → 我将帮你判断
+  A) A single operation with no dependency on other skills → create an atom
+  B) Composes 2–10 existing atoms to complete a well-scoped task → create a molecule
+  C) Orchestrates multiple molecules to complete a cross-domain complex task → create a compound
+  D) Not sure — help me decide
 ```
 
-### B-2：检查依赖是否存在（仅 molecule / compound）
+### B-2: Check Dependency Existence (molecule / compound only)
 
-**如果创建的是 molecule**：
-- 扫描 `.pi/skills/` 目录，列出所有已存在的 atom
-- 要求用户选择 2-10 个作为依赖
-- 若所需 atom 不存在，先创建缺少的 atom，再创建本 molecule
+**If creating a molecule:**
+- Scan `.pi/skills/` and list all existing atoms.
+- Ask the user to select 2–10 atoms as dependencies.
+- If any required atom does not exist, create the missing atom first, then return to this molecule.
 
-**如果创建的是 compound**：
-- 扫描 `.pi/skills/` 目录，列出所有已存在的 molecule
-- 要求用户选择 2-10 个作为依赖
-- 若所需 molecule 不存在，先创建缺少的 molecule，再创建本 compound
+**If creating a compound:**
+- Scan `.pi/skills/` and list all existing molecules.
+- Ask the user to select 2–10 molecules as dependencies.
+- If any required molecule does not exist, create the missing molecule first, then return to this compound.
 
-**原则：自底向上。先建依赖，再建调用方。**
+**Principle: Bottom-up. Create dependencies before dependents.**
 
-### B-3：确认 skill 内容
-
-按对应层级的模板逐项确认一次只问一个问题。
+### B-3: Confirm Skill Content
+Confirm each section of the template one question at a time, following the human-interaction rules.
 
 ---
 
-## 创建文件
+## Creating Files
 
-按以下模板创建 SKILL.md 文件。原子遵循自底向上（atom → molecule → compound）。
+Write `SKILL.md` files using the templates below. Follow bottom-up order for incremental creation (atom → molecule → compound).
 
-### Atom 模板
+### Atom Template
 
 ```markdown
 ---
-name: atom-<操作名>
+name: atom-<operation-name>
 description: >-
-  <一两句话描述做什么和什么场景触发，应回答"在什么情况下该用这个 skill">
+  <Concise description of what it does and when to trigger — answer "when should I use this skill?">
 layer: atom
 metadata:
   standalone: true
 disable-model-invocation: true
 ---
 
-## 用途
-[一句话说明这个原子做什么]
+## Purpose
+[One sentence describing what this atom does]
 
-## 前置条件
-[执行前需要满足的条件，如：需要哪些环境变量、文件、权限]
+## Prerequisites
+[Conditions that must be met, e.g.: required environment variables, files, permissions]
 
-## 输入
-[接受什么输入，格式要求]
+## Input
+[Expected input and format]
 
-## 执行步骤
-1. [步骤 1，极其具体，不留歧义]
-2. [步骤 2]
-3. [步骤 3]
+## Execution Steps
+1. [Step 1 — extremely specific, no ambiguity]
+2. [Step 2]
+3. [Step 3]
 
-## 输出
-[产出什么，格式是什么]
+## Output
+[Expected output and format]
 
-## 错误处理
-[遇到什么情况应停止并报告，而不是继续推进]
+## Error Handling
+[Cases where execution must stop and report, rather than continue]
 ```
 
-### Molecule 模板
+### Molecule Template
 
 ```markdown
 ---
-name: molecule-<阶段名>
+name: molecule-<stage-name>
 description: >-
-  <描述解决什么问题和触发场景，应回答"在什么情况下该用这个 skill">
+  <Concise description of the problem it solves and when to trigger — answer "when should I use this skill?">
 layer: molecule
 delegates-to:
-  - atom-<操作名1>
-  - atom-<操作名2>
+  - atom-<operation-name-1>
+  - atom-<operation-name-2>
 disable-model-invocation: true
 ---
 
-## 用途
-[说明这个分子解决什么问题]
+## Purpose
+[Describe what problem this molecule solves]
 
-## 依赖的原子
-使用 read 工具按需加载以下原子 skill：
-- `../atom-<操作名>/SKILL.md`：[一句话说明用于什么步骤]
+## Dependent Atoms
+Load the following atom skills on demand using the read tool:
+- `../atom-<name>/SKILL.md`: [one-line description of the step it serves]
 - ...
 
-## 编排流程
-> **铁律：一次只问一个问题。**
-> **选项推荐规则：** 提供 2-4 个选项 + ⭐ 推荐标记 + 自定义输入。
+## Orchestration Flow
+> **Iron Rule: One question at a time.**
+> **Option Recommendation Rule:** Present 2–4 options + ⭐ recommended pick + free-text fallback.
 
-1. 加载并执行 `atom-<操作名1>`：[说明传入什么、期望得到什么]
-2. 根据 atom-1 的结果：
-   - 如果 [条件 A]，加载并执行 `atom-<操作名2>`
-   - 如果 [条件 B]，直接进入步骤 3
-3. 加载并执行 `atom-<操作名3>`：[说明]
+1. Load and execute `atom-<name-1>`: [describe inputs and expected output]
+2. Based on the result of atom-1:
+   - If [condition A], load and execute `atom-<name-2>`
+   - If [condition B], proceed directly to step 3
+3. Load and execute `atom-<name-3>`: [description]
 
-## 输出
-[整体产出什么]
+## Output
+[Overall output]
 
-## 失败处理
-[某个原子失败时，整体如何响应]
+## Failure Handling
+[How the molecule responds when an atom fails]
 ```
 
-### Compound 模板
+### Compound Template
 
 ```markdown
 ---
-name: compound-<业务名>
+name: compound-<business-name>
 description: >-
-  <描述业务流程和触发场景，应回答"在什么情况下该用这个 skill">
+  <Describe the business process or workflow and when to trigger — answer "when should I use this skill?">
 layer: compound
 delegates-to:
-  - molecule-<阶段名1>
-  - molecule-<阶段名2>
+  - molecule-<stage-name-1>
+  - molecule-<stage-name-2>
 ---
 
-## 用途
-[说明这个化合物对应的业务流程或工作剧本]
+## Purpose
+[Describe the business process or workflow this compound orchestrates]
 
-## 人类驱动点
-> **铁律：一次只问一个问题。**
-> **选项推荐规则：** 提供 2-4 个选项 + ⭐ 推荐标记 + 自定义输入。
+## Human Decision Gates
+> **Iron Rule: One question at a time.**
+> **Option Recommendation Rule:** Present 2–4 options + ⭐ recommended pick + free-text fallback.
 
-[说明人类需要在哪些决策点介入，以及介入方式]
+[Describe at which decision points the human must intervene, and how]
 
-## 依赖的分子
-使用 read 工具按需加载以下分子 skill：
-- `../molecule-<阶段名>/SKILL.md`：[用于什么阶段]
+## Dependent Molecules
+Load the following molecule skills on demand using the read tool:
+- `../molecule-<name>/SKILL.md`: [which stage it handles]
 
-## 编排策略
-[默认顺序、并行时机、条件分支。允许 agent 有较高自主判断，
-但仍应尽量明确]
+## Orchestration Strategy
+[Default sequence, parallelism opportunities, conditional branches. Allow agents higher autonomy,
+but still be as explicit as possible]
 
-## 成功标准
-[什么状态代表化合物执行完成]
+## Success Criteria
+[What constitutes completion of this compound]
 
-## 已知局限
-[在哪些场景下可能不可靠，人类应注意什么]
+## Known Limitations
+[Scenarios where this compound may be unreliable; caveats the human should be aware of]
 ```
 
 ---
 
-## 更新 skill-graph.json
+## Update skill-graph.json
 
-创建或更新 `.pi/skill-graph.json`：
+Create or update `.pi/skill-graph.json`:
 
 ```json
 {
   "skills": [
     {
-      "name": "compound-<业务名>",
+      "name": "compound-<business-name>",
       "layer": "compound",
-      "delegatesTo": ["molecule-<阶段名1>", "molecule-<阶段名2>"],
+      "delegatesTo": ["molecule-<stage-name-1>", "molecule-<stage-name-2>"],
       "standalone": false
     },
     {
-      "name": "molecule-<阶段名>",
+      "name": "molecule-<stage-name>",
       "layer": "molecule",
-      "delegatesTo": ["atom-<操作名1>", "atom-<操作名2>"],
+      "delegatesTo": ["atom-<operation-name-1>", "atom-<operation-name-2>"],
       "standalone": false
     },
     {
-      "name": "atom-<操作名>",
+      "name": "atom-<operation-name>",
       "layer": "atom",
       "delegatesTo": [],
       "standalone": true
@@ -273,59 +272,59 @@ delegates-to:
 }
 ```
 
-**规则**：
-- 所有 compound → standalone: false
-- 所有 molecule → standalone: false
-- 所有 atom → standalone: true
-- `delegatesTo` 与 SKILL.md frontmatter 严格一致
-- 已存在的条目保留，只追加新条目，不覆盖
+**Rules:**
+- All compounds → `standalone: false`
+- All molecules → `standalone: false`
+- All atoms → `standalone: true`
+- `delegatesTo` must match the SKILL.md frontmatter exactly
+- Preserve existing entries; append only new ones — never overwrite
 
 ---
 
-## 创建后验证清单
+## Post-Creation Validation Checklist
 
-创建完成后，逐项检查。任一项不通过则修复后再继续：
+After creating files, verify each item. If any fails, fix it before proceeding:
 
-- [ ] **name 与目录名完全一致**：skill 的 `name` 字段 = 所在目录名
-- [ ] **layer 字段正确**：取值与实际行为一致（atom / molecule / compound）
-- [ ] **description 清晰**：描述用途和触发场景，而非实现步骤
-- [ ] **原子：不含 delegates-to**：atom 的 frontmatter 中没有 `delegates-to` 字段，正文不引用其他 skill
-- [ ] **分子/化合物：delegates-to 完整且存在**：列出所有被调度的下层 skill，且对应的 SKILL.md 已存在
-- [ ] **正文相对路径可解析**：`../atom-xxx/SKILL.md` 等路径从本 skill 目录可定位
-- [ ] **无循环依赖**：依赖链不回指自身（A → B → A）
-- [ ] **无跨层依赖**：compound 不直接调用 atom，molecule 不调用 compound
-- [ ] **依赖数量合法**：molecule 依赖 ≤ 10 个 atom，compound 依赖 ≤ 10 个 molecule
+- [ ] **name matches directory name exactly**: the `name` field equals the parent directory name
+- [ ] **layer field is correct**: the value reflects actual behavior (`atom` / `molecule` / `compound`)
+- [ ] **description describes trigger scenario**: describes when to use the skill, not how it is implemented
+- [ ] **Atom has no delegates-to**: atoms must not contain the `delegates-to` field in frontmatter, and must not reference other skills in the body
+- [ ] **Molecule / Compound delegates-to is complete and resolvable**: all referenced skills are listed, and their SKILL.md files exist
+- [ ] **Body-relative paths are resolvable**: `../atom-xxx/SKILL.md` and similar paths resolve from the skill's directory
+- [ ] **No circular dependencies**: the dependency chain must not loop back to itself (A → B → A)
+- [ ] **No cross-layer dependencies**: compounds must not call atoms directly; molecules must not call compounds
+- [ ] **Dependency count is within limits**: molecule depends on ≤ 10 atoms; compound depends on ≤ 10 molecules
 
 ---
 
-## 命名规范
+## Naming Conventions
 
-| 层级 | 前缀 | 示例 |
-|------|------|------|
+| Layer | Prefix | Example |
+|-------|--------|---------|
 | Compound | `compound-` | `compound-requirement-analysis` |
 | Molecule | `molecule-` | `molecule-jira-fetch` |
 | Atom | `atom-` | `atom-jira-read` |
 
-**名称规则**：小写字母 a-z、数字 0-9、连字符。最长 64 字符。与目录名一致。不以连字符开头/结尾。不含连续连字符 `--`。
+**Name rules**: Lowercase a–z, digits 0–9, hyphens. Max 64 characters. Must match directory name. Must not start or end with a hyphen. Must not contain consecutive hyphens (`--`).
 
 ---
 
-## 常见反模式（创建时必须避免）
+## Anti-Patterns (must avoid during creation)
 
-| 反模式 | 表现 | 修正 |
-|--------|------|------|
-| 原子做多件事 | 一个 atom 完成两个独立操作 | 拆分为两个 atom |
-| 依赖未声明 | 正文调用了某 skill 但 delegates-to 未列出 | 补充 delegates-to 字段 |
-| 依赖不存在 | delegates-to 引用了尚未创建的 skill | 先创建依赖 |
-| 化合物直接调原子 | compound 跳过 molecule 直接引用 atom | 包装成 molecule |
-| description 写实现 | 描述实现步骤而非触发场景 | 回答"什么情况下该用" |
-| 全自动化合物 | 化合物无人类介入节点 | 在关键决策点设确认 |
+| Anti-Pattern | Manifestation | Fix |
+|--------------|---------------|-----|
+| Atom doing too much | One atom performs two independent operations | Split into two atoms |
+| Undeclared dependency | Body invokes a skill not listed in delegates-to | Add to delegates-to |
+| Missing dependency | delegates-to references a skill that does not exist yet | Create the dependency first |
+| Compound calls atom directly | Compound skips the molecule layer | Wrap atoms into a molecule first |
+| Description describes implementation | Body describes implementation steps instead of trigger scenarios | Answer "when should I use this?" |
+| Fully-automated compound | Compound has no human intervention gates | Add human confirmation at key decision points |
 
 ---
 
-## 注意事项
-- Atom 的 `disable-model-invocation: true` 防止海量原子污染 `<available_skills>`
-- Molecule 的 `disable-model-invocation: true` 仅在 compound 指引下加载
-- Compound 不设 `disable-model-invocation`，确保用户在 available_skills 中可见
-- **自底向上**：增量模式下，先创建依赖（atom），再创建调用方（molecule → compound）
-- Enforcer 扩展每次 `before_agent_start` 自动重载 `skill-graph.json`
+## Notes
+- Atoms use `disable-model-invocation: true` to prevent flooding `<available_skills>` at scale.
+- Molecules use `disable-model-invocation: true` so they are only loaded when a compound directs it.
+- Compounds omit `disable-model-invocation` so they remain visible in `<available_skills>`.
+- **Bottom-up**: In incremental mode, create dependencies (atoms) before dependents (molecules → compounds).
+- The Enforcer extension reloads `skill-graph.json` automatically on every `before_agent_start`.
