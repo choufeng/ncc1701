@@ -189,16 +189,18 @@ async function main(): Promise<void> {
     ui.input.setText("")
   })
 
-  // Ctrl+C 双击退出
+  // Ctrl+C 双击退出（走 OpenTUI 按键事件，非 SIGINT 信号）
   const shouldQuit = createQuitGuard(1000)
-  process.on("SIGINT", () => {
-    if (!shouldQuit()) {
-      ui.updateTitle("再按一次 Ctrl+C 退出")
-      return
+  ui.renderer.keyInput.on("keypress", (event) => {
+    if (event.name === "c" && event.ctrl) {
+      if (!shouldQuit()) {
+        ui.updateTitle("再按一次 Ctrl+C 退出")
+        return
+      }
+      agent.abort()
+      ui.renderer.destroy()
+      process.exit(0)
     }
-    agent.abort()
-    ui.renderer.destroy()
-    process.exit(0)
   })
 }
 

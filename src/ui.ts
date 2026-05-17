@@ -27,6 +27,7 @@ export async function createUI(): Promise<UIHandle> {
   const renderer = await createCliRenderer({
     exitOnCtrlC: false,
     targetFps: 30,
+    useKittyKeyboard: {},
   })
 
   // 标题栏
