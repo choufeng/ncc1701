@@ -12,6 +12,7 @@ import { createTavilyIO } from "./io/tavily-io"
 import { createConversationIO } from "./io/conversation-io"
 import { createTools } from "./tools/index"
 import { createUI } from "./ui"
+import { setupMemory } from "./memory"
 import { appendMarkdown, appendStreamDelta } from "./pipeline"
 import { createQuitGuard } from "./quit-guard"
 import type { ChatMessage } from "./types"
@@ -120,6 +121,9 @@ async function main(): Promise<void> {
   const tools = createTools({ fileIO, shellIO, tavilyIO })
 
   const agent = new Agent({ streamFn: streamSimple })
+
+  // Memory 系统
+  const memory = setupMemory(agent)
   agent.state.model = model
   agent.state.systemPrompt = SYSTEM_PROMPT
   agent.state.tools = tools
@@ -198,6 +202,7 @@ async function main(): Promise<void> {
         return
       }
       agent.abort()
+      memory.dispose()
       ui.renderer.destroy()
       process.exit(0)
     }
