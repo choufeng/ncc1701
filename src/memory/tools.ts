@@ -1,5 +1,5 @@
 /**
- * NCC-1701 Memory Tools
+ * 项目 Memory Tools
  *
  * 注册到 Agent 的工具函数，支持多项目记忆和共享知识。
  */
@@ -14,10 +14,10 @@ import { safeFtsQuery, nowISO } from "./db";
 type ToolResult = string;
 
 // ============================================================================
-// ncc1701_memory
+// project_memory
 // ============================================================================
 
-export interface NccMemoryParams {
+export interface ProjectMemoryParams {
   action: "add" | "replace" | "remove" | "search";
   project?: string;
   content?: string;
@@ -26,9 +26,9 @@ export interface NccMemoryParams {
   limit?: number;
 }
 
-export async function ncc1701Memory(
+export async function projectMemory(
   db: MemoryDB,
-  params: NccMemoryParams,
+  params: ProjectMemoryParams,
 ): Promise<ToolResult> {
   const sqlite = db.get();
   const { action, project, content, old_text, tags, limit = 10 } = params;
@@ -224,7 +224,7 @@ export async function ncc1701Memory(
 }
 
 // ============================================================================
-// ncc1701_shared_knowledge
+// shared_knowledge
 // ============================================================================
 
 export interface SharedKnowledgeParams {
@@ -235,7 +235,7 @@ export interface SharedKnowledgeParams {
   limit?: number;
 }
 
-export async function ncc1701SharedKnowledge(
+export async function sharedKnowledge(
   db: MemoryDB,
   params: SharedKnowledgeParams,
 ): Promise<ToolResult> {

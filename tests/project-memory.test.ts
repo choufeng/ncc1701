@@ -1,5 +1,5 @@
 /**
- * NCC-1701 Memory Extension — 单元测试
+ * 项目 Memory Extension — 单元测试
  * 验证 DB schema、CRUD、FTS5、标签、跨项目查询
  */
 
@@ -129,7 +129,7 @@ let db: Database;
 let dbPath: string;
 
 beforeAll(() => {
-  dbPath = path.join(os.tmpdir(), `ncc1701-test-${Date.now()}.db`);
+  dbPath = path.join(os.tmpdir(), `project-memory-test-${Date.now()}.db`);
   db = new Database(dbPath);
   db.exec("PRAGMA journal_mode = WAL");
   db.exec("PRAGMA foreign_keys = ON");

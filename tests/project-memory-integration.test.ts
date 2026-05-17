@@ -1,5 +1,5 @@
 /**
- * NCC-1701 Memory 集成测试
+ * 项目 Memory 集成测试
  *
  * 验证 setupMemory() 正确集成到 Agent：
  * - 工具注册到 agent.state.tools
@@ -43,16 +43,16 @@ afterAll(() => {
 
 // ── 1. 工具注册 ──
 describe("工具注册", () => {
-  it("应该注册 ncc1701_memory 工具", () => {
+  it("应该注册 project_memory 工具", () => {
     const tools = agent.state.tools ?? [];
-    const memTool = tools.find((t) => t.name === "ncc1701_memory");
+    const memTool = tools.find((t) => t.name === "project_memory");
     expect(memTool).toBeDefined();
     expect(memTool!.description).toContain("多项目记忆");
   });
 
-  it("应该注册 ncc1701_shared_knowledge 工具", () => {
+  it("应该注册 shared_knowledge 工具", () => {
     const tools = agent.state.tools ?? [];
-    const skTool = tools.find((t) => t.name === "ncc1701_shared_knowledge");
+    const skTool = tools.find((t) => t.name === "shared_knowledge");
     expect(skTool).toBeDefined();
     expect(skTool!.description).toContain("共享知识");
   });
@@ -68,15 +68,15 @@ describe("工具注册", () => {
     const mem2 = setupMemory(agent2);
     const toolsAfter = agent2.state.tools ?? [];
     expect(toolsAfter.some((t) => t.name === "existing-tool")).toBe(true);
-    expect(toolsAfter.some((t) => t.name === "ncc1701_memory")).toBe(true);
+    expect(toolsAfter.some((t) => t.name === "project_memory")).toBe(true);
     mem2.dispose();
   });
 });
 
 // ── 2. 工具执行 ──
-describe("ncc1701_memory 执行", () => {
+describe("project_memory 执行", () => {
   it("add: 应该添加项目条目", async () => {
-    const tool = agent.state.tools?.find((t) => t.name === "ncc1701_memory")!;
+    const tool = agent.state.tools?.find((t) => t.name === "project_memory")!;
     const result = await tool.execute!("test-1", {
       action: "add",
       project: "integration-test",
@@ -89,7 +89,7 @@ describe("ncc1701_memory 执行", () => {
   });
 
   it("add: 缺少 project 应报错", async () => {
-    const tool = agent.state.tools?.find((t) => t.name === "ncc1701_memory")!;
+    const tool = agent.state.tools?.find((t) => t.name === "project_memory")!;
     const result = await tool.execute!("test-2", {
       action: "add",
       content: "无项目名",
@@ -100,7 +100,7 @@ describe("ncc1701_memory 执行", () => {
   });
 
   it("search: 应该搜索已添加的条目", async () => {
-    const tool = agent.state.tools?.find((t) => t.name === "ncc1701_memory")!;
+    const tool = agent.state.tools?.find((t) => t.name === "project_memory")!;
     const result = await tool.execute!("test-3", {
       action: "search",
       content: "TypeScript",
@@ -113,7 +113,7 @@ describe("ncc1701_memory 执行", () => {
   });
 
   it("search: 跨项目搜索", async () => {
-    const tool = agent.state.tools?.find((t) => t.name === "ncc1701_memory")!;
+    const tool = agent.state.tools?.find((t) => t.name === "project_memory")!;
     await tool.execute!("test-4a", {
       action: "add",
       project: "cross-test-b",
@@ -131,7 +131,7 @@ describe("ncc1701_memory 执行", () => {
   });
 
   it("replace: 应该替换条目", async () => {
-    const tool = agent.state.tools?.find((t) => t.name === "ncc1701_memory")!;
+    const tool = agent.state.tools?.find((t) => t.name === "project_memory")!;
     const result = await tool.execute!("test-5", {
       action: "replace",
       project: "integration-test",
@@ -153,7 +153,7 @@ describe("ncc1701_memory 执行", () => {
   });
 
   it("remove: 应该删除条目", async () => {
-    const tool = agent.state.tools?.find((t) => t.name === "ncc1701_memory")!;
+    const tool = agent.state.tools?.find((t) => t.name === "project_memory")!;
     await tool.execute!("test-6a", {
       action: "add",
       project: "integration-test",
@@ -172,9 +172,9 @@ describe("ncc1701_memory 执行", () => {
 });
 
 // ── 3. 共享知识 ──
-describe("ncc1701_shared_knowledge 执行", () => {
+describe("shared_knowledge 执行", () => {
   it("add: 应该添加共享知识", async () => {
-    const tool = agent.state.tools?.find((t) => t.name === "ncc1701_shared_knowledge")!;
+    const tool = agent.state.tools?.find((t) => t.name === "shared_knowledge")!;
     const result = await tool.execute!("sk-1", {
       action: "add",
       domain: "typescript",
@@ -186,7 +186,7 @@ describe("ncc1701_shared_knowledge 执行", () => {
   });
 
   it("search: 应该搜索共享知识", async () => {
-    const tool = agent.state.tools?.find((t) => t.name === "ncc1701_shared_knowledge")!;
+    const tool = agent.state.tools?.find((t) => t.name === "shared_knowledge")!;
     const result = await tool.execute!("sk-2", {
       action: "search",
       content: "strict",
@@ -197,7 +197,7 @@ describe("ncc1701_shared_knowledge 执行", () => {
   });
 
   it("search by domain: 按领域筛选", async () => {
-    const tool = agent.state.tools?.find((t) => t.name === "ncc1701_shared_knowledge")!;
+    const tool = agent.state.tools?.find((t) => t.name === "shared_knowledge")!;
     await tool.execute!("sk-3a", {
       action: "add",
       domain: "docker",
@@ -215,7 +215,7 @@ describe("ncc1701_shared_knowledge 执行", () => {
   });
 
   it("promote: 应该从项目条目升级", async () => {
-    const memTool = agent.state.tools?.find((t) => t.name === "ncc1701_memory")!;
+    const memTool = agent.state.tools?.find((t) => t.name === "project_memory")!;
     const addResult = await memTool.execute!("promo-a", {
       action: "add",
       project: "integration-test",
@@ -227,7 +227,7 @@ describe("ncc1701_shared_knowledge 执行", () => {
     expect(idMatch).not.toBeNull();
     const entryId = parseInt(idMatch![1]);
 
-    const skTool = agent.state.tools?.find((t) => t.name === "ncc1701_shared_knowledge")!;
+    const skTool = agent.state.tools?.find((t) => t.name === "shared_knowledge")!;
     const result = await skTool.execute!("promo-b", {
       action: "promote",
       source_entry_id: entryId,
@@ -242,7 +242,7 @@ describe("ncc1701_shared_knowledge 执行", () => {
 describe("System Prompt 注入", () => {
   it("agent_start 后 systemPrompt 应包含项目记忆", () => {
     // 独立 temp DB，不影响主测试
-    const tmpPath = os.tmpdir() + "/ncc1701-prompt-test-" + Date.now() + ".db";
+    const tmpPath = os.tmpdir() + "/project-prompt-test-" + Date.now() + ".db";
     const db = new Database(tmpPath);
     db.exec("PRAGMA journal_mode = WAL");
     db.exec(SCHEMA_SQL);
@@ -264,7 +264,7 @@ describe("System Prompt 注入", () => {
     }
 
     expect(agent2.state.systemPrompt).toContain("项目记忆测试条目");
-    expect(agent2.state.systemPrompt).toContain("<ncc-memory-context>");
+    expect(agent2.state.systemPrompt).toContain("<project-memory-context>");
 
     db.close();
     try { fs.unlinkSync(tmpPath); } catch { /* ok */ }
@@ -274,7 +274,7 @@ describe("System Prompt 注入", () => {
 // ── 5. 边界条件 ──
 describe("边界条件", () => {
   it("重复 add 同内容应创建新条目", async () => {
-    const tool = agent.state.tools?.find((t) => t.name === "ncc1701_memory")!;
+    const tool = agent.state.tools?.find((t) => t.name === "project_memory")!;
     const r1 = await tool.execute!("edge-1", {
       action: "add",
       project: "edge-test",
@@ -293,7 +293,7 @@ describe("边界条件", () => {
   });
 
   it("search 不存在的关键词应返回无结果", async () => {
-    const tool = agent.state.tools?.find((t) => t.name === "ncc1701_memory")!;
+    const tool = agent.state.tools?.find((t) => t.name === "project_memory")!;
     const result = await tool.execute!("edge-3", {
       action: "search",
       content: "xyzzy_nonexistent_12345",
@@ -304,7 +304,7 @@ describe("边界条件", () => {
   });
 
   it("特殊字符不崩溃", async () => {
-    const tool = agent.state.tools?.find((t) => t.name === "ncc1701_memory")!;
+    const tool = agent.state.tools?.find((t) => t.name === "project_memory")!;
     const result = await tool.execute!("edge-4", {
       action: "add",
       project: "edge-test",

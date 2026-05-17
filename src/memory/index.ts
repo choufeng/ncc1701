@@ -1,23 +1,23 @@
 /**
- * NCC-1701 Memory 集成入口
+ * 项目 Memory 集成入口
  *
  * setupMemory() 绑定 MemoryDB 到 Agent 生命周期：
  * - agent_start 时注入项目记忆
- * - 注册 ncc1701_memory 和 ncc1701_shared_knowledge 工具
+ * - 注册 project_memory 和 shared_knowledge 工具
  */
 
 import type { Agent, AgentTool, AgentToolResult } from "@mariozechner/pi-agent-core";
 import { Type, StringEnum, type Static } from "@mariozechner/pi-ai";
 import { MemoryDB, detectProject } from "./db";
-import { ncc1701Memory, ncc1701SharedKnowledge } from "./tools";
-import type { NccMemoryParams, SharedKnowledgeParams } from "./tools";
+import { projectMemory, sharedKnowledge } from "./tools";
+import type { ProjectMemoryParams, SharedKnowledgeParams } from "./tools";
 import { buildProjectMemoryBlock } from "./prompt";
 
 // ============================================================================
 // Tool Parameter Schemas
 // ============================================================================
 
-const NccMemoryParamsSchema = Type.Object({
+const ProjectMemoryParamsSchema = Type.Object({
   action: StringEnum(["add", "replace", "remove", "search"] as const),
   project: Type.Optional(Type.String({ description: "项目名。add/replace/remove 时必填" })),
   content: Type.Optional(Type.String({ description: "记忆内容（add/replace 用）" })),
@@ -38,16 +38,16 @@ const SharedKnowledgeParamsSchema = Type.Object({
 // Tool Definitions
 // ============================================================================
 
-function createNccMemoryTool(db: MemoryDB): AgentTool<typeof NccMemoryParamsSchema> {
+function createProjectMemoryTool(db: MemoryDB): AgentTool<typeof ProjectMemoryParamsSchema> {
   return {
-    name: "ncc1701_memory",
-    label: "NCC Memory",
+    name: "project_memory",
+    label: "Project Memory",
     description:
-      "NCC-1701 多项目记忆。管理项目专属记忆，支持标签和跨项目搜索。" +
+      "多项目记忆。管理项目专属记忆，支持标签和跨项目搜索。" +
       "全局记忆用 memory 工具，项目记忆用此工具。",
-    parameters: NccMemoryParamsSchema,
+    parameters: ProjectMemoryParamsSchema,
     async execute(_id, params): Promise<AgentToolResult> {
-      const text = await ncc1701Memory(db, params as NccMemoryParams);
+      const text = await projectMemory(db, params as ProjectMemoryParams);
       return { content: [{ type: "text", text }], details: {} };
     },
   };
@@ -55,14 +55,14 @@ function createNccMemoryTool(db: MemoryDB): AgentTool<typeof NccMemoryParamsSche
 
 function createSharedKnowledgeTool(db: MemoryDB): AgentTool<typeof SharedKnowledgeParamsSchema> {
   return {
-    name: "ncc1701_shared_knowledge",
-    label: "NCC Shared Knowledge",
+    name: "shared_knowledge",
+    label: "Shared Knowledge",
     description:
-      "NCC-1701 共享知识层。管理跨项目通用知识（如 TypeScript 最佳实践、Docker 配置经验）。" +
+      "共享知识层。管理跨项目通用知识（如 TypeScript 最佳实践、Docker 配置经验）。" +
       "action: add|search|promote。promote 从项目条目升级到共享层。",
     parameters: SharedKnowledgeParamsSchema,
     async execute(_id, params): Promise<AgentToolResult> {
-      const text = await ncc1701SharedKnowledge(db, params as SharedKnowledgeParams);
+      const text = await sharedKnowledge(db, params as SharedKnowledgeParams);
       return { content: [{ type: "text", text }], details: {} };
     },
   };
@@ -84,7 +84,7 @@ export function setupMemory(agent: Agent): MemorySetup {
   // ── 注册工具 ──
   const existingTools = agent.state.tools ?? [];
   const memoryTools = [
-    createNccMemoryTool(db),
+    createProjectMemoryTool(db),
     createSharedKnowledgeTool(db),
   ];
   agent.state.tools = [...memoryTools, ...existingTools];

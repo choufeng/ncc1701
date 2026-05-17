@@ -1,5 +1,5 @@
 /**
- * NCC-1701 Memory DB Manager
+ * 项目 Memory DB Manager
  *
  * SQLite 单文件存储，支持多项目、标签、共享知识。
  */
@@ -97,7 +97,7 @@ export class MemoryDB {
 
   constructor() {
     const homeDir = os.homedir();
-    this.dbPath = path.join(homeDir, ".pi", "agent", "ncc1701-memory.db");
+    this.dbPath = path.join(homeDir, ".pi", "agent", "project-memory.db");
   }
 
   open(): Database {
