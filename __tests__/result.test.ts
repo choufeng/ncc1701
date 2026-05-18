@@ -25,7 +25,7 @@ describe("result", () => {
     })
 
     it("should pass through err", () => {
-      const r = map(err<string, string>("oops"), x => x.toUpperCase())
+      const r = map(err<string>("oops"), (x: string) => x.toUpperCase())
       expect(r.ok).toBe(false)
     })
   })
@@ -37,12 +37,12 @@ describe("result", () => {
     })
 
     it("should short-circuit on err", () => {
-      const r = flatMap(err<string, string>("fail"), x => ok(x + 1))
+      const r = flatMap(err<string>("fail"), (x: string) => ok(x + 1))
       expect(r.ok).toBe(false)
     })
 
     it("should propagate inner err", () => {
-      const r = flatMap(ok(5), () => err<string, number>(0))
+      const r = flatMap(ok(5), () => err<number>(0))
       expect(r.ok).toBe(false)
     })
   })

@@ -6,12 +6,14 @@
  * - 注册 project_memory 和 shared_knowledge 工具
  */
 
-import type { Agent, AgentTool, AgentToolResult } from "@mariozechner/pi-agent-core";
-import { Type, StringEnum, type Static } from "@mariozechner/pi-ai";
-import { MemoryDB, detectProject } from "./db";
-import { projectMemory, sharedKnowledge } from "./tools";
-import type { ProjectMemoryParams, SharedKnowledgeParams } from "./tools";
-import { buildProjectMemoryBlock } from "./prompt";
+import type { Agent, AgentTool, AgentToolResult } from "@mariozechner/pi-agent-core"
+import { Type, StringEnum, type Static } from "@mariozechner/pi-ai"
+import { MemoryDB, detectProject } from "./db"
+import { projectMemory, sharedKnowledge } from "./tools"
+import type { ProjectMemoryParams, SharedKnowledgeParams } from "./tools"
+import { buildProjectMemoryBlock } from "./prompt"
+
+// ⚠️ 副作用：修改 agent.state、订阅 agent 生命周期
 
 // ============================================================================
 // Tool Parameter Schemas
@@ -46,9 +48,9 @@ function createProjectMemoryTool(db: MemoryDB): AgentTool<typeof ProjectMemoryPa
       "多项目记忆。管理项目专属记忆，支持标签和跨项目搜索。" +
       "全局记忆用 memory 工具，项目记忆用此工具。",
     parameters: ProjectMemoryParamsSchema,
-    async execute(_id, params): Promise<AgentToolResult> {
+    async execute(_id, params): Promise<AgentToolResult<void>> {
       const text = await projectMemory(db, params as ProjectMemoryParams);
-      return { content: [{ type: "text", text }], details: {} };
+      return { content: [{ type: "text", text }], details: undefined };
     },
   };
 }
@@ -61,9 +63,9 @@ function createSharedKnowledgeTool(db: MemoryDB): AgentTool<typeof SharedKnowled
       "共享知识层。管理跨项目通用知识（如 TypeScript 最佳实践、Docker 配置经验）。" +
       "action: add|search|promote。promote 从项目条目升级到共享层。",
     parameters: SharedKnowledgeParamsSchema,
-    async execute(_id, params): Promise<AgentToolResult> {
+    async execute(_id, params): Promise<AgentToolResult<void>> {
       const text = await sharedKnowledge(db, params as SharedKnowledgeParams);
-      return { content: [{ type: "text", text }], details: {} };
+      return { content: [{ type: "text", text }], details: undefined };
     },
   };
 }

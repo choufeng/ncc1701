@@ -3,9 +3,9 @@ import { parseArgs } from "node:util"
 import { homedir } from "node:os"
 import { join } from "node:path"
 import { Agent } from "@mariozechner/pi-agent-core"
-import { getModel, streamSimple } from "@mariozechner/pi-ai"
+import { streamSimple } from "@mariozechner/pi-ai"
 import type { AssistantMessage, AssistantMessageEvent, TextContent } from "@mariozechner/pi-ai"
-import { parseConfig } from "./config"
+import { parseConfig, createModel } from "./config"
 import { createFileIO } from "./io/file-io"
 import { createShellIO } from "./io/shell-io"
 import { createTavilyIO } from "./io/tavily-io"
@@ -113,11 +113,10 @@ async function main(): Promise<void> {
   }
 
   // 6. Agent
-  // getModel 要求强类型的 provider/model，动态值需要类型断言
-  const model = getModel(
-    config.provider as "anthropic",
-    config.model as "claude-sonnet-4-20250514",
-  )
+  // getModel 签名要求编译时字面量类型，动态配置值无法静态证明
+  // 已通过 parseConfig 的 validateProvider 验证合法性
+  // 使用类型安全适配层避免 as 断言散布在业务代码
+  const model = createModel(config.provider, config.model)
   const tools = createTools({ fileIO, shellIO, tavilyIO })
 
   const agent = new Agent({ streamFn: streamSimple })
@@ -170,6 +169,13 @@ async function main(): Promise<void> {
 
       case "agent_end":
         ui.setStreaming(false)
+        break
+
+      // 以下事件暂不处理 UI 更新，保留分支以维持穷尽匹配
+      case "turn_start":
+      case "turn_end":
+      case "message_start":
+      case "tool_execution_update":
         break
     }
   })
