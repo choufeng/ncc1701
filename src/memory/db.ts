@@ -4,10 +4,12 @@
  * SQLite 单文件存储，支持多项目、标签、共享知识。
  */
 
-import { Database } from "bun:sqlite";
-import * as fs from "node:fs";
-import * as path from "node:path";
-import * as os from "node:os";
+import { Database } from "bun:sqlite"
+import * as fs from "node:fs"
+import * as path from "node:path"
+import * as os from "node:os"
+
+// ⚠️ 副作用：SQLite 文件系统读写
 
 // ============================================================================
 // Schema
@@ -91,37 +93,51 @@ export const SCHEMA_SQL = `
 // Database Manager
 // ============================================================================
 
-export class MemoryDB {
-  private db: Database | null = null;
-  readonly dbPath: string;
-
-  constructor() {
-    const homeDir = os.homedir();
-    this.dbPath = path.join(homeDir, ".pi", "agent", "project-memory.db");
+// ⚠️ 副作用：打开数据库文件、执行 schema
+export function openDB(dbPath?: string): Database {
+  const resolvedPath = dbPath ?? defaultDBPath()
+  const dir = path.dirname(resolvedPath)
+  if (!fs.existsSync(dir)) {
+    fs.mkdirSync(dir, { recursive: true })
   }
 
-  open(): Database {
-    const dir = path.dirname(this.dbPath);
-    if (!fs.existsSync(dir)) {
-      fs.mkdirSync(dir, { recursive: true });
-    }
+  const db = new Database(resolvedPath)
+  db.exec("PRAGMA journal_mode = WAL")
+  db.exec("PRAGMA foreign_keys = ON")
+  db.exec(SCHEMA_SQL)
+  return db
+}
 
-    this.db = new Database(this.dbPath);
-    this.db.exec("PRAGMA journal_mode = WAL");
-    this.db.exec("PRAGMA foreign_keys = ON");
-    this.db.exec(SCHEMA_SQL);
-    return this.db;
+/** 计算默认 dbPath — 纯函数 */
+export function defaultDBPath(): string {
+  return path.join(os.homedir(), ".pi", "agent", "project-memory.db")
+}
+
+/** 数据库管理器：封装 open/close 生命周期 */
+export class MemoryDB {
+  private db: Database | null = null
+  readonly dbPath: string
+
+  constructor(dbPath?: string) {
+    this.dbPath = dbPath ?? defaultDBPath()
+  }
+
+  // ⚠️ 副作用：文件 I/O + SQLite 连接
+  open(): Database {
+    if (this.db) return this.db
+    this.db = openDB(this.dbPath)
+    return this.db
   }
 
   get(): Database {
-    if (!this.db) return this.open();
-    return this.db;
+    return this.db ?? this.open()
   }
 
+  // ⚠️ 副作用：关闭数据库连接
   close(): void {
     if (this.db) {
-      this.db.close();
-      this.db = null;
+      this.db.close()
+      this.db = null
     }
   }
 }

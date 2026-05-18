@@ -33,6 +33,11 @@ export function validateToolName(name: string): boolean {
   return (TOOL_NAMES as readonly string[]).includes(name)
 }
 
+/** Type guard: 验证字符串是否为合法 Provider，返回窄化类型 */
+export function validateProvider(value: string): Provider | null {
+  return (KNOWN_PROVIDERS as readonly string[]).includes(value) ? (value as Provider) : null
+}
+
 // === ToolCall ===
 export interface ToolCall {
   readonly name: ToolName
